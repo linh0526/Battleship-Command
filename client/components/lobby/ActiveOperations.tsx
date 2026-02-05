@@ -1,0 +1,113 @@
+"use client";
+
+import React from 'react';
+import { Globe, User, RefreshCw } from 'lucide-react';
+
+interface ActiveOperationsProps {
+  activeRooms: any[];
+  isConnected: boolean;
+  onJoinRoom: (id: string) => void;
+  t: (key: string) => string;
+}
+
+export default function ActiveOperations({
+  activeRooms,
+  isConnected,
+  onJoinRoom,
+  t
+}: ActiveOperationsProps) {
+  return (
+    <section className="flex flex-col gap-6 w-full flex-1 min-h-0">
+      <div className="flex items-center justify-between shrink-0">
+        <h2 className="text-lg font-black uppercase tracking-widest flex items-center gap-3 text-white">
+          <Globe className="w-5 h-5 text-primary" />
+          {t('active_ops')}
+        </h2>
+        <div className="flex gap-2">
+          <div className="bg-[#1e293b]/50 px-4 py-1.5 rounded-full border border-slate-800 text-xs font-bold text-slate-500 uppercase tracking-tighter">
+            Server: <span className={isConnected ? "text-emerald-400" : "text-error"}>{isConnected ? t('server_online') : t('server_offline')}</span>
+          </div>
+          <div className="bg-[#1e293b]/50 px-4 py-1.5 rounded-full border border-slate-800 text-xs font-bold text-slate-500 uppercase tracking-tighter">
+            Ping: <span className="text-emerald-400">1ms</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="glass-panel overflow-hidden bg-[#1e293b]/20 border-slate-800 w-full flex flex-col flex-1 min-h-0">
+        <div className="overflow-x-auto flex-1 custom-scroll">
+          <table className="w-full text-xs font-bold uppercase tracking-widest min-w-[800px]">
+            <thead className="sticky top-0 bg-slate-900/90 backdrop-blur z-10 border-b border-slate-800">
+              <tr className="text-slate-500">
+                <th className="px-6 font-bold py-6">{t('op_name')}</th>
+                <th className="px-6 font-bold py-6">{t('captains')}</th>
+                <th className="px-6 font-bold py-6">{t('status')}</th>
+                <th className="px-6 font-bold py-6">{t('action')}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/50">
+              {activeRooms.length > 0 ? activeRooms.map((op, i) => (
+                <tr key={i} className="hover:bg-primary/5 transition-colors group cursor-pointer border-b border-slate-800/50">
+                  <td className="px-6 py-6 border-r border-slate-800/30">
+                    <div className="text-center">
+                      <p className="text-white text-sm tracking-normal mb-0.5 whitespace-nowrap">{op.name}</p>
+                      <p className="text-slate-500 text-[11px] font-mono leading-none tracking-normal italic">ID: {op.id.substring(0,8)}</p>
+                    </div>
+                  </td>
+                  <td className="px-6 py-6 text-center border-r border-slate-800/30">
+                    <div className="flex items-center justify-center gap-1.5 text-slate-400 tracking-normal">
+                      <User className="w-3 h-3" />
+                      {op.captains}
+                    </div>
+                  </td>
+                  <td className="px-6 py-6 text-center border-r border-slate-800/30">
+                    <div className="flex items-center justify-center gap-2 tracking-normal">
+                      <div className={`w-2 h-2 rounded-full ${op.statusColor} shadow-[0_0_8px_currentColor]`}></div>
+                      <span className="text-slate-300">
+                         {op.status === 'WAITING' ? t('room_waiting') : 
+                          op.status === 'PLACING' ? t('room_placing') : 
+                          op.status === 'BATTLE' ? t('room_battle') : op.status}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-6 text-center">
+                      {op.status === 'DANGER' ? (
+                        <span className="text-[10px] font-black text-error uppercase tracking-widest italic animate-pulse">
+                          IMPOSSIBLE
+                        </span>
+                      ) : op.status === 'WAITING' ? (
+                        <button
+                          onClick={() => onJoinRoom(op.id)}
+                          className="px-6 py-2 bg-primary/20 hover:bg-primary text-primary hover:text-white border border-primary/30 rounded-lg transition-all font-black"
+                        >
+                          {t('join')}
+                        </button>
+                      ) : (
+                        <div className="flex flex-col items-center opacity-40">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] italic">
+                            {t('room_full')}
+                          </span>
+                        </div>
+                      )}
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={4} className="py-20 text-center text-slate-600 uppercase tracking-widest font-black italic">
+                    No active operations detected. Be the first to deploy.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        
+        <div className="p-4 bg-slate-900/40 border-t border-slate-800 flex justify-between items-center shrink-0">
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Active Fleet Scanning... {activeRooms.length} Sectors Detected</p>
+          <div className="flex gap-4">
+            <button className="p-2 bg-slate-800/50 rounded-lg text-slate-500 hover:text-white transition-colors"><RefreshCw className="w-3 h-3" /></button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
