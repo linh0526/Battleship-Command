@@ -1,0 +1,246 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
+
+/**
+ * PREMIUM MILITARY-TECH DESIGN SYSTEM
+ * Style: Cyber-Military / Glassmorphism
+ */
+
+:root {
+  /* Core Palette - Deep Navy & Neon Blue */
+  --bg-core: #0a0e1a;
+  --bg-surface: #0f172a;
+  --bg-glass: rgba(15, 23, 42, 0.4);
+  
+  --primary: #195de6;
+  --primary-glow: rgba(25, 93, 230, 0.3);
+  --accent: #0ea5e9;
+  --accent-glow: rgba(14, 165, 233, 0.2);
+  
+  /* Tactical Secondary Colors */
+  --success: #10b981;
+  --success-glow: rgba(16, 185, 129, 0.3);
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --error-glow: rgba(239, 68, 68, 0.3);
+  
+  /* Text */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+  
+  /* Grid */
+  --grid-border: rgba(59, 130, 246, 0.2);
+  --grid-bg: rgba(30, 41, 59, 0.5);
+}
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --color-surface: var(--bg-surface);
+  --color-text-secondary: var(--text-secondary);
+  
+  --font-sans: 'Outfit', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  --radius-tactical: 4px;
+  --radius-premium: 12px;
+  
+  --shadow-neon: 0 0 15px var(--primary-glow);
+  --shadow-neon-strong: 0 0 25px var(--primary-glow);
+}
+
+/* Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg-core);
+  background-image: 
+    radial-gradient(circle at 50% -20%, #1e293b 0%, transparent 60%),
+    radial-gradient(circle at 0% 0%, #0f172a 0%, transparent 40%);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Grid Pattern Overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Premium Glass Container */
+.glass-panel {
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+  border-radius: var(--radius-premium);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(14, 165, 233, 0.1);
+}
+
+/* Tactical Heading */
+.tactical-title {
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 800;
+  background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.2));
+}
+
+/* Premium Buttons */
+.btn-tactical {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--primary) 0%, #1d4ed8 100%);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-tactical);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.btn-tactical::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+.btn-tactical:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 20px var(--primary-glow);
+  transform: translateY(-2px);
+}
+
+.btn-tactical:hover::after {
+  left: 100%;
+}
+
+/* Battleship Grid Styling */
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2px;
+  background: var(--grid-border);
+  border: 1px solid var(--grid-border);
+  padding: 2px;
+  border-radius: 4px;
+}
+
+.cell {
+  aspect-ratio: 1;
+  background: var(--bg-core);
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(59, 130, 246, 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.cell:hover::before {
+  opacity: 1;
+}
+
+.cell.hit {
+  background: radial-gradient(circle, var(--error) 20%, transparent 80%);
+  box-shadow: inset 0 0 15px var(--error-glow);
+}
+
+.cell.miss {
+  background: radial-gradient(circle, #64748b 20%, transparent 60%);
+}
+
+.cell.ship {
+  background: rgba(59, 130, 246, 0.3);
+  border: 1px solid var(--primary);
+}
+
+/* SCANLINE ANIMATION */
+.scanline {
+  width: 100%;
+  height: 2px;
+  background: rgba(14, 165, 233, 0.4);
+  position: absolute;
+  z-index: 10;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  animation: scan 4s linear infinite;
+  box-shadow: 0 0 15px var(--accent);
+}
+
+@keyframes scan {
+  0% { transform: translateY(0); opacity: 0; }
+  10%, 90% { opacity: 1; }
+  100% { transform: translateY(1000%); opacity: 0; }
+}
+
+@keyframes wave {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(5px) scaleY(0.9); }
+}
+
+/* Tactical UI Utilities */
+.glow-primary {
+  box-shadow: 0 0 20px var(--primary-glow);
+  filter: drop-shadow(0 0 8px var(--primary-glow));
+}
+
+.glow-error {
+  box-shadow: 0 0 20px var(--error-glow);
+  filter: drop-shadow(0 0 8px var(--error-glow));
+}
+
+/* Custom Tactical Scrollbar */
+.custom-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scroll::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.1);
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.2);
+  border-radius: 10px;
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}

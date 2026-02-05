@@ -1,0 +1,73 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+client/.next/
+client/out/
+
+# Production
+client/build/
+server/dist/
+
+# Environment Variables
+.env
+*.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific
+client/tsconfig.tsbuildinfo
+.agent/
+.gemini/
+.gemini.md
+.agent.md
+fix_encoding.py
+ERRORS.md
+RELEASES.md
+WALKTHROUGH.md
+PLAN.md
+TASK.md
+KNOWLEDGE.md
+AGENTS.md
+RULES.md
+SKILLS.md
+WORKFLOWS.md
+DNA.md
+METRICS.md
+VITALS.md
+SECURITY.md
+COMPLIANCE.md
+I18N.md
+UIUX.md
+DATABASE.md
+API.md
+INFRA.md
+AUTO_UPDATE.md
+MALWARE.md
+LOGGING.md
+DOCS_SYNC.md
+AGENTS_GUIDE.vi.md
+RULES_GUIDE.vi.md
+SKILLS_GUIDE.vi.md
+WORKFLOW_GUIDE.vi.md
+README.vi.md
