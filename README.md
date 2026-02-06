@@ -2,6 +2,12 @@
 
 Trò chơi Hải chiến (Battleship) phiên bản cao cấp với giao diện hiện đại, hỗ trợ chơi Online (PvP) và đấu với máy (PvE), được tối ưu hóa cho trải nghiệm mượt mà và tính cạnh tranh cao.
 
+## Hình ảnh trang web
+
+<img width="1846" height="1002" alt="image" src="https://github.com/user-attachments/assets/4140d4ff-2ca5-472d-b46f-e1ad9c5d7eb0" />
+
+<img width="1862" height="1003" alt="image" src="https://github.com/user-attachments/assets/1e7d5c66-a09d-478f-8e13-578cb0b714a8" />
+
 ## Tính năng nổi bật
 
 - **Chế độ chơi đa dạng**: 
