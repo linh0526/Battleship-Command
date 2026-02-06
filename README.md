@@ -1,6 +1,10 @@
-# Battleship Game - Premium Tactical Combat
+# Battleship Command - Premium Tactical Combat
 
-Trò chơi Hải chiến (Battleship) phiên bản cao cấp với giao diện hiện đại, hỗ trợ chơi Online (PvP) và đấu với máy (PvE), được tối ưu hóa cho trải nghiệm mượt mà và tính cạnh tranh cao.
+Trò chơi Bắn thuyền (Battleship) phiên bản cao cấp với giao diện hiện đại, hỗ trợ chơi Online (PvP) và đấu với máy (PvE), được tối ưu hóa cho trải nghiệm mượt mà và tính cạnh tranh cao.
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=linh0526/Battleship-Command&type=date&legend=top-left)](https://www.star-history.com/#linh0526/Battleship-Command&type=date&legend=top-left)
 
 ## Hình ảnh trang web
 
