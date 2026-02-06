@@ -4,8 +4,7 @@ Trò chơi Bắn thuyền (Battleship) phiên bản cao cấp với giao diện 
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=linh0526/Battleship-Command&type=timeline&legend=top-left)](https://www.star-history.com/#linh0526/Battleship-Command&type=timeline&legend=top-left)
-
+[![Star History Chart](https://api.star-history.com/svg?repos=linh0526/Battleship-Command&type=timeline&legend=bottom-right)](https://www.star-history.com/#linh0526/Battleship-Command&type=timeline&legend=bottom-right)
 ## Hình ảnh trang web
 
 <img width="1846" height="1002" alt="image" src="https://github.com/user-attachments/assets/4140d4ff-2ca5-472d-b46f-e1ad9c5d7eb0" />
