@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { useGame } from '@/context/GameContext';
 import { useSocket } from '@/context/SocketContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Shield, Zap, LogOut, Swords, Timer, CheckCircle2, ChevronRight, AlertTriangle } from 'lucide-react';
 
-export default function MatchingPage() {
+function MatchingContent() {
   const router = useRouter();
   const { t } = useLanguage();
   const { gameState, setRoomReady, setOpponentRoomReady, setGameStatus } = useGame();
@@ -17,8 +18,14 @@ export default function MatchingPage() {
     emitStartMatch, onMatchStart, leaveRoom, onOpponentLeft 
   } = useSocket();
 
+  const searchParams = useSearchParams();
+  const roomFromUrl = searchParams.get('room');
+
   const [players, setPlayers] = useState<any[]>([]);
   const [countdown, setCountdown] = useState<number | null>(null);
+
+  // Recovery logic: If URL has room but state doesn't, wait for socket recovery
+  // SocketContext already handles server-side recovery on connect.
 
   // Countdown logic when both ready
   useEffect(() => {
@@ -37,12 +44,13 @@ export default function MatchingPage() {
     return () => clearTimeout(timer);
   }, [gameState.isRoomReady, gameState.isOpponentRoomReady, countdown, emitStartMatch]);
 
-  // Safety redirect
+  // Safety redirect - ONLY if both state and URL are missing
   useEffect(() => {
-    if (!gameState.roomId && isConnected) {
+    if (!gameState.roomId && !roomFromUrl && isConnected) {
+      console.warn('[MATCHING] No room found in state or URL. Aborting.');
       router.push('/');
     }
-  }, [gameState.roomId, isConnected, router]);
+  }, [gameState.roomId, roomFromUrl, isConnected, router]);
 
   useEffect(() => {
     if (!socket) return;
@@ -56,7 +64,8 @@ export default function MatchingPage() {
     });
 
     onMatchStart(() => {
-      router.push('/placement');
+      // Đính kèm ID phòng sang trang placement để giữ liên kết
+      router.push(`/placement?room=${gameState.roomId || roomFromUrl}`);
     });
 
     onOpponentLeft(() => {
@@ -68,7 +77,7 @@ export default function MatchingPage() {
       socket.off('room_ready_update');
       socket.off('match_start_init');
     };
-  }, [socket, onRoomReadyUpdated, onMatchStart, onOpponentLeft, setRoomReady, setOpponentRoomReady, router]);
+  }, [socket, onRoomReadyUpdated, onMatchStart, onOpponentLeft, setRoomReady, setOpponentRoomReady, router, gameState.roomId, roomFromUrl]);
 
   const handleToggleReady = () => {
     const nextReady = !gameState.isRoomReady;
@@ -86,8 +95,6 @@ export default function MatchingPage() {
     router.push('/');
   };
 
-  const isHost = true; // For now simplified, could check socket ID vs room host
-
   return (
     <div className="min-h-[calc(100vh-140px)] w-full flex flex-col gap-8 py-10 px-6">
       {/* HEADER SECTION */}
@@ -95,7 +102,7 @@ export default function MatchingPage() {
         <div className="space-y-2">
           <div className="flex items-center gap-3">
              <div className="px-3 py-1 bg-primary/20 border border-primary/40 rounded-md">
-                <span className="text-primary font-mono text-xs font-bold uppercase tracking-wider">ROOM ID: {gameState.roomId}</span>
+                <span className="text-primary font-mono text-xs font-bold uppercase tracking-wider">ROOM ID: {gameState.roomId || roomFromUrl}</span>
              </div>
              <div className="flex items-center gap-2 text-emerald-400">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -269,9 +276,9 @@ export default function MatchingPage() {
                 }`}
              >
                 <motion.div 
-                  animate={{ x: gameState.isRoomReady && gameState.isOpponentRoomReady ? ['-100%', '200%'] : '0%' }}
-                  transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-                  className="absolute inset-0 bg-white/10 skew-x-12"
+                   animate={{ x: gameState.isRoomReady && gameState.isOpponentRoomReady ? ['-100%', '200%'] : '0%' }}
+                   transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                   className="absolute inset-0 bg-white/10 skew-x-12"
                 />
                 <Swords className={`w-6 h-6 ${gameState.isRoomReady && gameState.isOpponentRoomReady ? 'animate-bounce' : ''}`} />
                 <span className="flex items-center gap-2">
@@ -308,5 +315,22 @@ export default function MatchingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MatchingPage() {
+  return (
+    <Suspense fallback={
+      <div className="h-[calc(100vh-140px)] w-full flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+          <p className="text-slate-500 font-black uppercase tracking-widest text-xs animate-pulse">
+            Syncing Neural Link...
+          </p>
+        </div>
+      </div>
+    }>
+      <MatchingContent />
+    </Suspense>
   );
 }

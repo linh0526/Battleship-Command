@@ -8,6 +8,7 @@ import { useSocket } from '@/context/SocketContext';
 
 // Splitted Components
 import CallsignModal from '@/components/lobby/CallsignModal';
+import MatchingModal from '@/components/lobby/MatchingModal';
 import LobbyHero from '@/components/lobby/LobbyHero';
 import ActiveOperations from '@/components/lobby/ActiveOperations';
 import TopCommanders from '@/components/lobby/TopCommanders';
@@ -26,6 +27,16 @@ function LobbyContent() {
   const [onlineUsers, setOnlineUsers] = useState(0);
   const [pendingAction, setPendingAction] = useState<'pvp' | 'create' | 'join' | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [showMatchingModal, setShowMatchingModal] = useState(false);
+
+  // Sync state to show matching modal if we are in a room
+  useEffect(() => {
+    if (gameState.roomId && gameState.roomId !== 'waiting-room') {
+      setShowMatchingModal(true);
+    } else {
+      setShowMatchingModal(false);
+    }
+  }, [gameState.roomId]);
 
   // join from url
   useEffect(() => {
@@ -129,16 +140,16 @@ function LobbyContent() {
       switch (pendingAction) {
         case 'pvp':
           joinRandomRoom(tempName);
-          router.push('/matching');
+          // router.push('/matching'); // Bỏ dòng này, sẽ điều hướng tự động khi nhận được room_joined
           break;
         case 'create':
           createRoom(tempName);
-          router.push('/matching');
+          // router.push('/matching');
           break;
         case 'join':
           if (targetRoomId) {
             joinSpecificRoom(targetRoomId, tempName);
-            router.push('/matching');
+            // router.push('/matching');
           }
           break;
       }
@@ -159,6 +170,11 @@ function LobbyContent() {
         onConfirm={confirmNameAndStart}
         onGenerateRandom={generateRandomName}
         t={t}
+      />
+
+      <MatchingModal 
+        isOpen={showMatchingModal}
+        onClose={() => setShowMatchingModal(false)}
       />
 
       {/* LEFT COLUMN: Main Actions & Active Ops */}

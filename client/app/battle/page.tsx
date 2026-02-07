@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Target } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { useGame, ShipInstance, GamePhase } from '@/context/GameContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSocket } from '@/context/SocketContext';
@@ -16,8 +17,10 @@ import BattleLog from '@/components/battle/BattleLog';
 import BattleFooter from '@/components/battle/BattleFooter';
 import { Shield } from 'lucide-react';
 
-export default function BattlePage() {
+function BattleContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const roomFromUrl = searchParams.get('room');
   const { t } = useLanguage();
   const { 
     emitMove, notifyDefeat, emitRematchRequest, 
@@ -560,6 +563,7 @@ export default function BattlePage() {
             gameMode={gameState.gameMode}
             turnTimer={turnTimer}
             onAbort={() => setShowAbortModal(true)}
+            roomId={gameState.roomId || roomFromUrl}
         />
 
         {/* TACTICAL INTERFACE */}
@@ -576,7 +580,7 @@ export default function BattlePage() {
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 px-3 py-1 bg-slate-900/60 rounded border border-white/5">
                       <span className="text-xs font-black text-slate-500 uppercase">ID</span>
-                      <span className="text-sm font-bold text-white uppercase tracking-widest">{gameState.isPlayingPvE ? 'ghostAI' : (gameState.roomId || t('scanning'))}</span>
+                      <span className="text-sm font-bold text-white uppercase tracking-widest">{gameState.isPlayingPvE ? 'ghostAI' : (gameState.roomId || roomFromUrl || t('scanning'))}</span>
                     </div>
                   </div>
               </div>
@@ -638,7 +642,7 @@ export default function BattlePage() {
                     </div>
                     <div className="flex items-center gap-2 px-3 py-1 bg-slate-900/60 rounded border border-white/5">
                       <span className="text-[10px] font-black text-slate-500 uppercase">RADAR</span>
-                      <span className="text-xs font-bold text-white uppercase tracking-widest">{gameState.isPlayingPvE ? 'ghostAI' : (gameState.roomId || 'SCAN')}</span>
+                      <span className="text-xs font-bold text-white uppercase tracking-widest">{gameState.isPlayingPvE ? 'ghostAI' : (gameState.roomId || roomFromUrl || 'SCAN')}</span>
                     </div>
                 </div>
 
@@ -769,5 +773,22 @@ export default function BattlePage() {
         <BattleFooter accuracy={accuracy} sunkEnemyShips={sunkEnemyShips} />
       </div>
     </div>
+  );
+}
+
+export default function BattlePage() {
+  return (
+    <Suspense fallback={
+      <div className="h-full w-full flex items-center justify-center bg-[#060912]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+          <p className="text-slate-500 font-black uppercase tracking-widest text-xs animate-pulse">
+            Neural Link Active - Reconnecting to Combat Sector...
+          </p>
+        </div>
+      </div>
+    }>
+      <BattleContent />
+    </Suspense>
   );
 }

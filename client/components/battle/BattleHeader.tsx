@@ -12,6 +12,7 @@ interface BattleHeaderProps {
   gameMode: string;
   turnTimer: number;
   onAbort: () => void;
+  roomId?: string | null;
 }
 
 export default function BattleHeader({
@@ -22,7 +23,8 @@ export default function BattleHeader({
   opponentStatus,
   gameMode,
   turnTimer,
-  onAbort
+  onAbort,
+  roomId
 }: BattleHeaderProps) {
   const { t } = useLanguage();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);

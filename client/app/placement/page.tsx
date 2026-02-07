@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { useGame, ShipInstance, Orientation, GamePhase } from '@/context/GameContext';
 import { useSocket } from '@/context/SocketContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -22,8 +23,10 @@ const SHIP_TYPES = [
   { name: 'Destroyer', size: 2, icon: '⛵', id: 'DD-08', color: 'bg-sky-500', text: 'text-sky-400', border: 'border-sky-500/50' },
 ];
 
-export default function PlacementPage() {
+function PlacementContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const roomFromUrl = searchParams.get('room');
   const pathname = usePathname();
   const { t } = useLanguage();
   const { 
@@ -64,7 +67,7 @@ export default function PlacementPage() {
     const handleOpponentLeft = () => {
       console.warn('[PLACEMENT] Opponent left room');
       // If we are in a room (not just waiting lobby), show the modal
-      if (gameState.roomId && gameState.roomId !== 'waiting-room') {
+      if ((gameState.roomId || roomFromUrl) && gameState.roomId !== 'waiting-room') {
         setGameStatus(GamePhase.ENDED);
         setShowAbortModal(false);
         setShowOpponentLeftModal(true);
@@ -309,6 +312,7 @@ export default function PlacementPage() {
              
              if (waitingRoom) {
                 joinSpecificRoom(waitingRoom.id, undefined, placedShips);
+                // Sẽ tự động redirect nhờ useEffect bên dưới
              } else {
                 createRoom(undefined, placedShips);
              }
@@ -317,7 +321,7 @@ export default function PlacementPage() {
     }
 
     // CASE 2: In a Room -> ACTION: ready / cancel ready
-    if (gameState.roomId) {
+    if (gameState.roomId || roomFromUrl) {
         if (gameState.isFleetReady || isReady) {
              setIsReady(false);
              setFleetReady(false);
@@ -348,9 +352,9 @@ export default function PlacementPage() {
     ) return;
     if (gameState.gameStatus === GamePhase.PLAYING) {
       console.log('>>> REDIRECTING TO BATTLE');
-      router.push('/battle');
+      router.push(`/battle?room=${gameState.roomId || roomFromUrl}`);
     }
-  }, [gameState.gameStatus, router, pathname]);
+  }, [gameState.gameStatus, router, pathname, gameState.roomId, roomFromUrl]);
 
   const clearFleet = () => {
     if (isReady) return;
@@ -425,19 +429,19 @@ export default function PlacementPage() {
   const isFleetComplete = placedShips.length === SHIP_TYPES.length;
 
   return (
-    <div className={(gameState.roomId || isSearching)
+    <div className={(gameState.roomId || roomFromUrl || isSearching)
       ? "fixed inset-0 bg-[#060912] overflow-y-auto flex flex-col items-center p-6 lg:p-10 z-[100]" 
       : "grid grid-cols-1 lg:grid-cols-12 gap-10"
     }>
-      <div className={(gameState.roomId || isSearching) ? "w-full max-w-[1440px] flex flex-col" : "contents"}>
-        {(gameState.roomId || isSearching) && (
+      <div className={(gameState.roomId || roomFromUrl || isSearching) ? "w-full max-w-[1440px] flex flex-col" : "contents"}>
+        {(gameState.roomId || roomFromUrl || isSearching) && (
           <PlacementHeader 
-            gameState={gameState} 
+            gameState={{ ...gameState, roomId: gameState.roomId || roomFromUrl }} 
             onAbort={() => setShowAbortModal(true)} 
           />
         )}
 
-        <div className={(gameState.roomId || isSearching) ? "grid grid-cols-1 lg:grid-cols-12 gap-10" : "contents"}>
+        <div className={(gameState.roomId || roomFromUrl || isSearching) ? "grid grid-cols-1 lg:grid-cols-12 gap-10" : "contents"}>
           {/* LEFT: TACTICAL PLACEMENT GRID */}
           <main className="lg:col-span-8 flex flex-col gap-8">
             <section>
@@ -520,5 +524,22 @@ export default function PlacementPage() {
         onExitToLobby={handleExitToLobby}
       />
     </div>
+  );
+}
+
+export default function PlacementPage() {
+  return (
+    <Suspense fallback={
+      <div className="h-[calc(100vh-140px)] w-full flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+          <p className="text-slate-500 font-black uppercase tracking-widest text-xs animate-pulse">
+            Loading Tactical Interface...
+          </p>
+        </div>
+      </div>
+    }>
+      <PlacementContent />
+    </Suspense>
   );
 }

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useGame, GamePhase } from './GameContext';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useLanguage } from './LanguageContext';
 
 interface SocketContextType {
@@ -56,6 +56,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setOpponentStatus 
   } = useGame();
 
+  const searchParams = useSearchParams();
+  const roomFromUrl = searchParams.get('room');
+
   // Grace period for initial connection
   useEffect(() => {
     const timer = setTimeout(() => setIsInitialLoad(false), 3000);
@@ -90,13 +93,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.log('Socket connected:', s.id);
       setIsConnected(true);
       
-      // HARD RESET ROOM STATE on reconnect to avoid ghost data
-      setRoomId(null);
-      setOpponent(null);
-      setGameStatus(GamePhase.IDLE);
-      setOpponentFleetReady(false);
-      setRoomReady(false);
-      setOpponentRoomReady(false);
+      // Không nên reset roomId ở đây vì sẽ làm mất trạng thái khi reconnect/chuyển trang
+      // Server sẽ gửi room_joined để khôi phục trạng thái nếu cần
     });
 
     s.on('disconnect', () => {
@@ -172,6 +170,25 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       s.disconnect();
     };
   }, [setRoomId, setOpponent, setGameStatus, setTurn, addLog, setOpponentFleetReady, setRoomReady, setOpponentRoomReady, setOpponentStatus, setFleetReady]);
+
+  // AUTO-JOIN / RECOVERY FROM URL
+  useEffect(() => {
+    if (isConnected && roomFromUrl && !gameState.roomId && !isInitialLoad) {
+      // Small delay to let server-side recovery (based on clientId) happen first
+      const recoveryTimer = setTimeout(() => {
+        if (!gameState.roomId) {
+          console.log('[SOCKET] Auto-joining room from URL:', roomFromUrl);
+          // Only join if we don't have a name yet (will show callsign modal) 
+          // or if we already have one.
+          socket?.emit('join_specific', { 
+            name: gameState.playerName || 'Commander', 
+            targetId: roomFromUrl 
+          });
+        }
+      }, 1000);
+      return () => clearTimeout(recoveryTimer);
+    }
+  }, [isConnected, roomFromUrl, gameState.roomId, isInitialLoad, socket, gameState.playerName]);
 
   const joinRandomRoom = useCallback((nameOverride?: string, fleet?: any[]) => {
     if (socket) socket.emit('join_random', { name: nameOverride || gameState.playerName, fleet });
