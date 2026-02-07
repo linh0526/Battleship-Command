@@ -18,7 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BATTLESHIP COMMAND | Tactical Neural Network",
+  title: "BATTLESHIP COMMAND",
   description: "Global Fleet Defense Network - Premium Battleship Experience",
 };
 
