@@ -60,8 +60,9 @@ export default function PlacementGrid({
                     onMouseEnter={() => setHoverPos({r, c})}
                     onMouseLeave={() => setHoverPos(null)}
                     className={`cell aspect-square border-t border-l border-slate-900 relative group/cell transition-all cursor-crosshair
-                      ${status.type === 'preview' ? (status.valid ? `${status.color} opacity-40` : 'bg-error/30') : ''}
-                      ${status.type === 'ship' ? `${status.ship?.shipBgColor} border-white/10 shadow-[inset_0_0_15px_rgba(0,0,0,0.3)]` : 'hover:bg-primary/5'}
+                      ${status.type === 'preview' ? (status.valid ? `${status.color} opacity-80 shadow-[inset_0_0_15px_rgba(255,255,255,0.2)]` : 'bg-red-500/60 shadow-[inset_0_0_15px_rgba(239,68,68,0.3)]') : ''}
+                      ${status.type === 'ship' ? `${status.ship?.shipBgColor} border-white/10 shadow-[inset_0_0_15px_rgba(0,0,0,0.3)]` : 'hover:bg-white/20'}
+                      after:absolute after:inset-0 after:border after:border-white/0 hover:after:border-white/40 after:transition-all after:pointer-events-none
                     `}
                   >
                     <div className="absolute top-1 left-1 w-1 h-1 bg-slate-800 rounded-full opacity-20"></div>
