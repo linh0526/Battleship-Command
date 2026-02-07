@@ -9,9 +9,20 @@ interface PlacementModalsProps {
   showOpponentLeftModal: boolean;
   setShowOpponentLeftModal: (show: boolean) => void;
   onConfirmAbort: () => void;
-  onContinueSearching: () => void;
   onExitToLobby: () => void;
 }
+
+const overlayVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1 },
+  exit: { opacity: 0 }
+};
+
+const modalVariants = {
+  hidden: { opacity: 0, scale: 0.9, y: 20 },
+  visible: { opacity: 1, scale: 1, y: 0 },
+  exit: { opacity: 0, scale: 0.9, y: 20 }
+};
 
 export default function PlacementModals({
   showAbortModal,
@@ -19,10 +30,22 @@ export default function PlacementModals({
   showOpponentLeftModal,
   setShowOpponentLeftModal,
   onConfirmAbort,
-  onContinueSearching,
   onExitToLobby
 }: PlacementModalsProps) {
   const { t } = useLanguage();
+
+  React.useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (showOpponentLeftModal) return; 
+
+      if (showAbortModal) setShowAbortModal(false);
+    };
+    if (showAbortModal || showOpponentLeftModal) {
+      window.addEventListener('keydown', handleEsc);
+    }
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [showAbortModal, showOpponentLeftModal, setShowAbortModal, setShowOpponentLeftModal]);
 
   return (
     <AnimatePresence>
@@ -30,16 +53,19 @@ export default function PlacementModals({
       {showAbortModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            variants={overlayVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
             onClick={() => setShowAbortModal(false)}
           />
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            variants={modalVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            onClick={(e) => e.stopPropagation()}
             className="relative w-full max-w-md glass-panel p-8 bg-slate-900 border-error/20 flex flex-col items-center text-center shadow-2xl"
           >
             <div className="w-20 h-20 rounded-full bg-error/10 flex items-center justify-center mb-6 border border-error/20 shadow-[0_0_30px_rgba(239,68,68,0.1)]">
@@ -77,15 +103,19 @@ export default function PlacementModals({
       {showOpponentLeftModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            variants={overlayVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+            // Non-dismissible
           />
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            variants={modalVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            onClick={(e) => e.stopPropagation()}
             className="relative w-full max-w-md glass-panel p-8 bg-slate-900 border-error/20 flex flex-col items-center text-center shadow-2xl"
           >
             <div className="w-20 h-20 rounded-full bg-error/10 flex items-center justify-center mb-6 border border-error/20 shadow-[0_0_30px_rgba(239,68,68,0.1)]">
@@ -101,17 +131,10 @@ export default function PlacementModals({
             
             <div className="flex flex-col w-full gap-3">
               <button
-                onClick={onContinueSearching}
+                onClick={onExitToLobby}
                 className="w-full py-4 bg-primary text-white rounded-xl font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-3 group"
               >
-                <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                {t('continue_searching')}
-              </button>
-              
-              <button
-                onClick={onExitToLobby}
-                className="w-full py-4 bg-slate-800 text-slate-400 rounded-xl font-black uppercase tracking-widest hover:bg-slate-700 hover:text-white transition-all border border-white/5"
-              >
+                <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 {t('exit_to_lobby')}
               </button>
             </div>

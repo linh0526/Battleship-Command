@@ -5,18 +5,20 @@ import { MessageSquare, ShieldAlert, Send } from 'lucide-react';
 
 interface LobbyChatProps {
   onlineUsers: number;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string>) => string;
 }
 
-export default function LobbyChat({ onlineUsers, t }: LobbyChatProps) {
-  const dummyChats = [
-    { user: 'ViperPilot', msg: 'Operation Alpha is recruiting! Need a veteran captain.', type: 'msg', color: 'text-primary' },
-    { user: 'ADM.Sarah', msg: 'GG on the last ranked match, SeaWolf.', type: 'msg', color: 'text-warning' },
-    { user: 'System', msg: 'Daily tournament starts in 15 minutes.', type: 'sys', color: 'text-slate-500' },
-    { user: 'Ghost', msg: 'Anyone up for 14x14 custom?', type: 'msg', color: 'text-emerald-400' },
-    { user: 'BigBoss', msg: 'Sector 4 intelligence report is out.', type: 'msg', color: 'text-slate-300' },
-    { user: 'Data_Cmdr', msg: 'Connecting to neural uplink...', type: 'msg', color: 'text-blue-400' },
-  ];
+const LobbyChat = ({ onlineUsers, t }: LobbyChatProps) => {
+const dummyChats = [
+  { user: 'ViperPilot', msg: 'Chiến dịch Alpha đang tuyển quân. Cần thuyền trưởng cứng tay.', type: 'msg'},
+  { user: 'ADM.Sarah', msg: 'Kèo rank vừa rồi đánh đẹp đó SeaWolf.', type: 'msg'},
+  { user: 'System', msg: 'Giải đấu hằng ngày sẽ bắt đầu sau 15 phút.', type: 'sys', color: 'text-red-500' },
+  { user: 'Ghost', msg: 'Có ai chơi custom bản đồ 14x14 không?', type: 'msg'},
+  { user: 'BigBoss', msg: 'Báo cáo tình báo khu vực số 4 đã được cập nhật.', type: 'msg'},
+  { user: 'Data_Cmdr', msg: 'Đang kết nối liên kết chiến thuật...', type: 'msg'},
+];
+
+
 
   return (
     <section className="flex flex-col gap-6 flex-1 min-h-0">
@@ -27,7 +29,9 @@ export default function LobbyChat({ onlineUsers, t }: LobbyChatProps) {
         </h3>
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-          <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest">{onlineUsers} Online</span>
+          <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest">
+            {t('online_count', { count: onlineUsers.toString() })}
+          </span>
         </div>
       </div>
 
@@ -59,7 +63,7 @@ export default function LobbyChat({ onlineUsers, t }: LobbyChatProps) {
           </div>
           
           <div className="flex items-center justify-between text-[11px] font-black uppercase text-slate-600 tracking-widest px-1">
-            <span>Enter to ship</span>
+            <span>{t('enter_to_ship')}</span>
             <span>45 / 200</span>
           </div>
         </div>
@@ -67,3 +71,5 @@ export default function LobbyChat({ onlineUsers, t }: LobbyChatProps) {
     </section>
   );
 }
+
+export default LobbyChat;

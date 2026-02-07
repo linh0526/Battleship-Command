@@ -11,8 +11,20 @@ interface CallsignModalProps {
   setTempName: (name: string) => void;
   onConfirm: () => void;
   onGenerateRandom: () => void;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string>) => string;
 }
+
+const overlayVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1 },
+  exit: { opacity: 0 }
+};
+
+const modalVariants = {
+  hidden: { opacity: 0, scale: 0.9, y: 20 },
+  visible: { opacity: 1, scale: 1, y: 0 },
+  exit: { opacity: 0, scale: 0.9, y: 20 }
+};
 
 export default function CallsignModal({
   show,
@@ -23,19 +35,31 @@ export default function CallsignModal({
   onGenerateRandom,
   t
 }: CallsignModalProps) {
+  React.useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (show) window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [show, onClose]);
+
   return (
     <AnimatePresence>
       {show && (
         <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          variants={overlayVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          onClick={onClose}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
         >
           <motion.div 
-            initial={{ scale: 0.9, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.9, y: 20 }}
+            variants={modalVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            onClick={(e) => e.stopPropagation()}
             className="glass-panel max-w-md w-full p-8 border border-primary/30 flex flex-col gap-6"
           >
             <div className="flex flex-col gap-2">

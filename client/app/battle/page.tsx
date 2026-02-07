@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Target } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useGame, ShipInstance } from '@/context/GameContext';
+import { useGame, ShipInstance, GamePhase } from '@/context/GameContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSocket } from '@/context/SocketContext';
 
@@ -20,7 +20,7 @@ export default function BattlePage() {
   const { 
     emitMove, notifyDefeat, emitRematchRequest, 
     emitRematchAccept, onRematchRequested, onRematchAccepted, 
-    socket, leaveRoom, endPve
+    socket, leaveRoom, endPve, clientId: myClientId, joinRandomRoom
   } = useSocket();
   const { 
     gameState, addLog, setTurn, resetGame, prepareRematch, addScore, setRoomId, setGameStatus
@@ -48,25 +48,48 @@ export default function BattlePage() {
   // Listen for opponent leaving
   useEffect(() => {
     const handleOpponentLeft = () => {
-      if (gameState.roomId && gameState.roomId !== 'waiting-room' && !gameResult) {
+      console.warn('[BATTLE] Opponent left/disconnected');
+      // Always show modal if we are in battle stage
+      if (gameState.gameStatus === GamePhase.PLAYING || gameState.gameStatus === GamePhase.PLACEMENT) {
+        setGameStatus(GamePhase.ENDED);
+        setGameResult('win'); // They left, you win!
+        setShowAbortModal(false);
         setShowOpponentLeftModal(true);
+        addLog({ msg: t('log_opponent_disconnected'), result: t('log_victory_by_default'), type: 'sys' });
       }
     };
     
     if (socket) {
       socket.on('opponent_left', handleOpponentLeft);
+      // Also listen to match_ended specifically
+      socket.on('match_ended', (data) => {
+        if (data.reason === 'opponent_left') {
+          handleOpponentLeft();
+        }
+      });
+
       return () => {
         socket.off('opponent_left', handleOpponentLeft);
+        socket.off('match_ended');
       };
     }
-  }, [socket, gameState.roomId, gameResult]);
+  }, [socket, gameState.gameStatus, addLog, t]);
+
+  // Notify server on tab close
+  useEffect(() => {
+    const handleUnload = () => {
+      leaveRoom();
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, [leaveRoom]);
 
   // We handle endPve explicitly via Abort or Return to Base buttons
   // to avoid clearing the session during transitions.
 
   // Auto-fire timer logic
   useEffect(() => {
-    if (gameResult || gameState.gameStatus === 'waiting' || !gameState.currentTurn) return;
+    if (gameResult || gameState.gameStatus === GamePhase.MATCHMAKING || !gameState.currentTurn) return;
 
     if (turnTimer === 0) {
       if (gameState.currentTurn === 'player') {
@@ -165,7 +188,7 @@ export default function BattlePage() {
       const handleShotProcessed = (data: { attackerId: string, r: number, c: number, result: 'hit' | 'miss' | 'sunk', sunkShip?: any }) => {
         const { attackerId, r, c, result, sunkShip } = data;
         const key = `${r}-${c}`;
-        const isMyShot = attackerId === socket.id;
+        const isMyShot = attackerId === myClientId;
 
         if (isMyShot) {
             // My shot feedback
@@ -216,9 +239,11 @@ export default function BattlePage() {
       };
 
       const handleTurnChange = (data: { turn: string }) => {
-          setTurn(data.turn === socket.id ? 'player' : 'opponent');
-          setTurnTimer(30); // Reset timer on turn change
-      };
+      setTurn(data.turn === myClientId ? 'player' : 'opponent');
+      setTurnTimer(30); // Reset timer on turn change
+      // Ensure we are in PLAYING phase
+      if (gameState.gameStatus !== GamePhase.PLAYING) setGameStatus(GamePhase.PLAYING);
+    };
 
       const handleVictory = () => {
         if (gameResult) return;
@@ -235,16 +260,35 @@ export default function BattlePage() {
         addLog({ msg: t('log_defeat'), result: t('log_mission_failed'), type: 'sys' });
       };
 
+      const handleMatchStart = () => {
+        router.push('/placement');
+      };
+
       socket.on('shot_processed', handleShotProcessed);
       socket.on('turn_change', handleTurnChange);
       socket.on('player_victory', handleVictory);
       socket.on('player_defeat', handleDefeat);
+      socket.on('match_start_init', handleMatchStart);
+      
+      // Auto-ready if we join a room while in waiting state (from Continue Searching)
+      const handleRoomJoined = () => {
+        if (gameState.gameStatus === GamePhase.MATCHMAKING) {
+          socket.emit('player_room_ready', { ready: true });
+        }
+      };
+      socket.on('room_joined', handleRoomJoined);
+      
+      // Handle match termination (handled by the unified opponent_left listener above for most cases)
+      // but keeping this for explicit game end reasons if needed later.
 
       return () => {
         socket.off('shot_processed', handleShotProcessed);
         socket.off('turn_change', handleTurnChange);
         socket.off('player_victory', handleVictory);
         socket.off('player_defeat', handleDefeat);
+        socket.off('match_start_init', handleMatchStart);
+        socket.off('room_joined', handleRoomJoined);
+        socket.off('match_ended');
       };
     }
   }, [socket, gameState.gameMode, addLog, gameResult, addScore, setTurn]);
@@ -479,19 +523,14 @@ export default function BattlePage() {
     }
   };
 
-  const handleReturnToBase = () => {
-    if (gameState.gameMode === 'PvE') endPve();
-    resetGame();
-    router.push('/');
-  };
-  
-  const handleConfirmAbort = () => {
+  const handleExitToLobby = useCallback(() => {
     setShowAbortModal(false);
+    setShowOpponentLeftModal(false);
     if (gameState.gameMode === 'PvE') endPve();
     leaveRoom();
     resetGame();
     router.push('/');
-  };
+  }, [gameState.gameMode, endPve, leaveRoom, resetGame, router]);
 
   return (
     <div className="fixed inset-0 bg-[#060912] overflow-hidden flex items-center justify-center p-6 lg:p-10">
@@ -500,36 +539,20 @@ export default function BattlePage() {
         setShowTurnNotify={setShowTurnNotify}
         currentTurn={gameState.currentTurn}
         gameStatus={gameState.gameStatus}
-        onCancelSearch={() => {
-            resetGame();
-            router.push('/');
-        }}
+        onCancelSearch={handleExitToLobby}
         gameResult={gameResult}
         gameMode={gameState.gameMode}
         opponentWantsRematch={opponentWantsRematch}
         rematchRequested={rematchRequested}
         rematchTimer={rematchTimer}
         onRematch={handleRematch}
-        onReturnToBase={handleReturnToBase}
+        onReturnToBase={handleExitToLobby}
         showOpponentLeftModal={showOpponentLeftModal}
         setShowOpponentLeftModal={setShowOpponentLeftModal}
-        onContinueSearching={() => {
-            const currentRoomId = gameState.roomId;
-            setShowOpponentLeftModal(false);
-            // Stay in room, just reset game state and move back to placement
-            resetGame();
-            setRoomId(currentRoomId);
-            setGameStatus('waiting');
-            router.push('/placement');
-        }}
-        onExitToLobby={() => {
-            setShowOpponentLeftModal(false);
-            resetGame();
-            router.push('/');
-        }}
+        onExitToLobby={handleExitToLobby}
         showAbortModal={showAbortModal}
         setShowAbortModal={setShowAbortModal}
-        onConfirmAbort={handleConfirmAbort}
+        onConfirmAbort={handleExitToLobby}
       />
 
       <div className="w-full h-full max-w-[1440px] flex flex-col gap-6 relative">
@@ -538,6 +561,7 @@ export default function BattlePage() {
             scores={gameState.scores}
             playerName={gameState.playerName}
             opponentName={gameState.opponent?.name}
+            opponentStatus={gameState.opponent?.status}
             gameMode={gameState.gameMode}
             turnTimer={turnTimer}
             onAbort={() => setShowAbortModal(true)}

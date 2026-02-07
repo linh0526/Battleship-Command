@@ -24,7 +24,15 @@ export interface LogEntry {
   type: 'hit' | 'enemy-hit' | 'miss' | 'sys' | 'info';
 }
 
-export interface GameState {
+export enum GamePhase {
+  IDLE = 'IDLE',
+  MATCHMAKING = 'MATCHMAKING',
+  PLACEMENT = 'PLACEMENT',
+  PLAYING = 'PLAYING',
+  ENDED = 'ENDED',
+}
+
+export interface GlobalState {
   playerName: string;
   playerFleet: ShipInstance[];
   isFleetReady: boolean;
@@ -34,41 +42,47 @@ export interface GameState {
   opponent: {
     name: string;
     fleetReady: boolean;
+    status: 'connected' | 'disconnected';
   } | null;
   currentTurn: 'player' | 'opponent' | null;
   scores: {
     player: number;
     opponent: number;
   };
-  gameStatus: 'idle' | 'waiting' | 'playing' | 'ended';
+  gameStatus: GamePhase;
   isPlayingPvE: boolean;
+  isRoomReady: boolean;
+  isOpponentRoomReady: boolean;
 }
 
 interface GameContextType {
-  gameState: GameState;
+  gameState: GlobalState;
   setPlayerName: (name: string) => void;
   setPlayerFleet: (fleet: ShipInstance[]) => void;
   setFleetReady: (ready: boolean) => void;
   setRoomId: (id: string | null) => void;
   setGameMode: (mode: 'PvP' | 'PvE') => void;
   addLog: (log: Omit<LogEntry, 'time'>) => void;
-  setOpponent: (opp: GameState['opponent']) => void;
-  setTurn: (turn: GameState['currentTurn']) => void;
+  setOpponent: (opp: GlobalState['opponent']) => void;
+  setOpponentStatus: (status: 'connected' | 'disconnected') => void;
+  setTurn: (turn: GlobalState['currentTurn']) => void;
   addScore: (winner: 'player' | 'opponent', points: number) => void;
-  setGameStatus: (status: GameState['gameStatus']) => void;
+  setGameStatus: (status: GamePhase | 'idle' | 'waiting' | 'playing' | 'ended') => void;
   resetGame: () => void;
   prepareRematch: () => void;
   setOpponentFleetReady: (ready: boolean) => void;
   resetScores: () => void;
   setIsPlayingPvE: (playing: boolean) => void;
+  setRoomReady: (ready: boolean) => void;
+  setOpponentRoomReady: (ready: boolean) => void;
   t: (key: string) => string;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
-  const initialState: GameState = {
-    playerName: 'Commander',
+  const INITIAL_STATE: GlobalState = {
+    playerName: '',
     playerFleet: [],
     isFleetReady: false,
     roomId: null,
@@ -77,11 +91,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     opponent: null,
     currentTurn: null,
     scores: { player: 0, opponent: 0 },
-    gameStatus: 'idle',
-    isPlayingPvE: false
+    gameStatus: GamePhase.IDLE,
+    isPlayingPvE: false,
+    isRoomReady: false,
+    isOpponentRoomReady: false
   };
 
-  const [gameState, setGameState] = useState<GameState>(initialState);
+  const [gameState, setGameState] = useState<GlobalState>(INITIAL_STATE);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Tải dữ liệu từ LocalStorage sau khi mount (Client-side only)
@@ -136,11 +152,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  const setOpponent = useCallback((opp: GameState['opponent']) => {
+  const setOpponent = useCallback((opp: GlobalState['opponent']) => {
     setGameState(prev => ({ ...prev, opponent: opp }));
   }, []);
 
-  const setTurn = useCallback((turn: GameState['currentTurn']) => {
+  const setTurn = useCallback((turn: GlobalState['currentTurn']) => {
     setGameState(prev => ({ ...prev, currentTurn: turn }));
   }, []);
 
@@ -154,12 +170,35 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  const setGameStatus = useCallback((status: GameState['gameStatus']) => {
-    setGameState(prev => ({ ...prev, gameStatus: status }));
+  const setGameStatus = useCallback((status: GamePhase | 'idle' | 'waiting' | 'playing' | 'ended') => {
+    let finalStatus: GamePhase;
+    
+    // If it's already one of the enum values, use it directly
+    if (Object.values(GamePhase).includes(status as GamePhase)) {
+      finalStatus = status as GamePhase;
+    } else if (typeof status === 'string') {
+      switch (status.toLowerCase()) {
+        case 'waiting': finalStatus = GamePhase.MATCHMAKING; break;
+        case 'playing': finalStatus = GamePhase.PLAYING; break;
+        case 'ended': finalStatus = GamePhase.ENDED; break;
+        case 'idle': default: finalStatus = GamePhase.IDLE; break;
+      }
+    } else {
+      finalStatus = status;
+    }
+    setGameState(prev => ({ ...prev, gameStatus: finalStatus }));
   }, []);
 
   const setIsPlayingPvE = useCallback((playing: boolean) => {
     setGameState(prev => ({ ...prev, isPlayingPvE: playing }));
+  }, []);
+
+  const setRoomReady = useCallback((ready: boolean) => {
+    setGameState(prev => ({ ...prev, isRoomReady: ready }));
+  }, []);
+
+  const setOpponentRoomReady = useCallback((ready: boolean) => {
+    setGameState(prev => ({ ...prev, isOpponentRoomReady: ready }));
   }, []);
 
   const resetScores = useCallback(() => {
@@ -178,9 +217,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       battleLogs: [],
       opponent: null,
       currentTurn: null,
-      gameStatus: 'idle',
+      gameStatus: GamePhase.IDLE,
       scores: { player: 0, opponent: 0 },
-      isPlayingPvE: false
+      isPlayingPvE: false,
+      isRoomReady: false,
+      isOpponentRoomReady: false
     }));
   }, []);
 
@@ -191,7 +232,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       isFleetReady: false,
       battleLogs: [],
       currentTurn: null,
-      gameStatus: 'waiting',
+      gameStatus: GamePhase.MATCHMAKING,
       opponent: prev.opponent ? { ...prev.opponent, fleetReady: false } : null
     }));
   }, []);
@@ -200,6 +241,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setGameState(prev => ({
       ...prev,
       opponent: prev.opponent ? { ...prev.opponent, fleetReady: ready } : null
+    }));
+  }, []);
+
+  const setOpponentStatus = useCallback((status: 'connected' | 'disconnected') => {
+    setGameState(prev => ({
+      ...prev,
+      opponent: prev.opponent ? { ...prev.opponent, status } : null
     }));
   }, []);
 
@@ -222,8 +270,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       resetGame,
       prepareRematch,
       setOpponentFleetReady,
+      setOpponentStatus,
       resetScores,
       setIsPlayingPvE,
+      setRoomReady,
+      setOpponentRoomReady,
       t
     }}>
       {children}

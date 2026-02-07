@@ -46,10 +46,9 @@ const translations = {
     room_placing: 'PREPARING',
     room_battle: 'BATTLE',
     room_full: 'FULL',
-    opponent_left_title: 'OPPONENT DESERTED',
-    opponent_left_desc: 'Your opponent has left the sector. Command, what are our orders?',
-    continue_searching: 'Stay in the lobby',
-    exit_to_lobby: 'EXIT TO LOBBY',
+    opponent_left_title: 'OPPONENT DISCONNECTED',
+    opponent_left_desc: 'The match has ended.',
+    exit_to_lobby: 'BACK TO LOBBY',
     confirm_exit_room: 'Are you sure you want to abandon this operation?',
     abort_title: 'ABORT MISSION?',
     abort_description: 'You are about to withdraw from the current sector. All progress and tactical data will be lost. Admiral, confirm your orders.',
@@ -113,6 +112,7 @@ const translations = {
     scanning_signals: 'Scanning for signals...',
     server_down_msg: 'Lost connection to Command Center. Server is offline.',
     find_match: 'FIND MATCH',
+    lost_connection: 'LOST CONNECTION',
 
     // New Battle UI
     accuracy: 'Accuracy',
@@ -166,6 +166,36 @@ const translations = {
     log_switching_defense: 'SWITCHING TO DEFENSE',
     log_confirmed_neutralized: 'CONFIRMED: {name} HAS BEEN NEUTRALIZED.',
     log_target_destroyed: 'TARGET DESTROYED',
+
+    // Team Lobby
+    team_lobby: 'COMMAND CENTER',
+    create_or_join_squad: 'CREATE OR JOIN A SQUAD',
+    team_lobby_btn: 'Online (PVP)',
+    multiplayer_desc: 'READY TO DEPLOY',
+    pve_training_title: 'PvE TRAINING',
+    squad_lobby: 'Matching Area',
+    assemble_commanders: 'Assemble your fleet commanders',
+    abandon_mission: 'Abandon Mission',
+    commander_you: 'Commander (You)',
+    allied_commander: 'Allied Commander',
+    scanning_frequencies: 'Scanning Frequencies',
+    waiting_neural_link: 'Waiting for allied commander to join neural link...',
+    protocol_status: 'Protocol Status',
+    pre_match_init: 'Pre-Match Initialization',
+    readiness_desc: 'Both commanders must confirm their readiness status over the neural uplink before deployment protocol can be initiated.',
+    initiate_deployment: 'Initiate Deployment',
+    confirm_ready: 'Confirm Ready',
+    cancel_ready: 'Cancel Ready',
+    mission_confirmed: 'MISSION CONFIRMED',
+    waiting_confirmation: 'WAITING FOR CONFIRMATION...',
+
+    // General UI
+    establishing_uplink: 'Establishing Neural Uplink...',
+    online_count: '{count} Online',
+    enter_to_ship: 'Enter to ship',
+    no_active_ops: 'No active operations detected. Be the first to deploy.',
+    sectors_detected: '{count} Sectors Detected',
+    fleet_scanning: 'Active Fleet Scanning...',
   },
   vi: {
     // Header
@@ -203,9 +233,8 @@ const translations = {
     room_battle: 'TRONG TRẬN',
     room_full: 'PHÒNG ĐẦY',
     opponent_left_title: 'ĐỐI THỦ ĐÃ BẢY CHỌ',
-    opponent_left_desc: 'Đối thủ của bạn đã rút lui khỏi khu vực. Đô đốc, mệnh lệnh của ngài là gì?',
-    continue_searching: 'Ở Lại',
-    exit_to_lobby: 'RỜI ĐI',
+    opponent_left_desc: 'Đô đốc, hãy xác nhận mệnh lệnh.',
+    exit_to_lobby: 'VỀ SẢNH CHỜ',
     confirm_exit_room: 'Bạn có chắc chắn muốn hủy bỏ chiến dịch này không?',
     abort_title: 'HỦY CHIẾN DỊCH?',
     abort_description: 'Ngài sắp rút quân khỏi khu vực hiện tại. Toàn bộ tiến trình và dữ liệu chiến thuật sẽ bị xóa sạch. Đô đốc, hãy xác nhận mệnh lệnh.',
@@ -269,6 +298,7 @@ const translations = {
     scanning_signals: 'Đang quét tín hiệu...',
     server_down_msg: 'Mất kết nối với trung tâm chỉ huy. Server sập rồi mấy ní ơi:))',
     find_match: 'TÌM TRẬN',
+    lost_connection: 'MẤT KẾT NỐI',
 
     // New Battle UI
     accuracy: 'Độ Chính Xác',
@@ -322,6 +352,36 @@ const translations = {
     log_switching_defense: 'CHUYỂN SANG PHÒNG THỦ',
     log_confirmed_neutralized: 'XÁC NHẬN: {name} ĐÃ BỊ LOẠI BỎ.',
     log_target_destroyed: 'MỤC TIÊU ĐÃ BỊ PHÁ HỦY',
+
+    // Team Lobby
+    team_lobby: 'TRUNG TÂM CHỈ HUY',
+    create_or_join_squad: 'TẠO HOẶC THAM GIA ĐỘI',
+    team_lobby_btn: 'Trực tuyến (pvp)',
+    multiplayer_desc: 'SẴN SÀNG XUẤT KÍCH',
+    pve_training_title: 'HUẤN LUYỆN (pve)',
+    squad_lobby: 'Tìm Trận',
+    assemble_commanders: 'Tập hợp các chỉ huy hạm đội của bạn',
+    abandon_mission: 'Rời Bỏ Nhiệm Vụ',
+    commander_you: 'Đô Đốc (Bạn)',
+    allied_commander: 'Đồng Minh',
+    scanning_frequencies: 'Đang Quét Tần Số',
+    waiting_neural_link: 'Đang chờ đồng minh kết nối thần kinh...',
+    protocol_status: 'Trạng Thái Giao Thức',
+    pre_match_init: 'Khởi Tạo Trước Trận Đấu',
+    readiness_desc: 'Cả hai chỉ huy phải xác nhận trạng thái sẵn sàng qua liên kết thần kinh trước khi bắt đầu quy trình triển khai.',
+    initiate_deployment: 'Bắt Đầu Triển Khai',
+    confirm_ready: 'Xác Nhận Sẵn Sàng',
+    cancel_ready: 'Hủy Sẵn Sàng',
+    mission_confirmed: 'NHIỆM VỤ ĐÃ XÁC NHẬN',
+    waiting_confirmation: 'ĐANG CHỜ XÁC NHẬN...',
+
+    // General UI
+    establishing_uplink: 'Đang thiết lập liên kết thần kinh...',
+    online_count: '{count} Trực Tuyến',
+    enter_to_ship: 'Nhấn Enter để gửi',
+    no_active_ops: 'Không tìm thấy chiến dịch nào. Hãy là người đầu tiên tham chiến.',
+    sectors_detected: 'Phát hiện {count} Khu Vực',
+    fleet_scanning: 'Đang quét hạm đội...',
   }
 };
 

@@ -32,7 +32,6 @@ export default function Header() {
 
             <nav className="hidden md:flex items-center gap-10 text-[13px] font-black uppercase tracking-[0.2em] shrink-0">
               <NavLink href="/" active={pathname === '/'}>{t('lobby')}</NavLink>
-              <NavLink href="/placement" active={pathname === '/placement'}>{t('barracks')}</NavLink>
               <NavLink href="/leaderboard" active={pathname === '/leaderboard'}>{t('leaderboard')}</NavLink>
             </nav>
           </div>

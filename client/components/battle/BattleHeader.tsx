@@ -1,5 +1,4 @@
-import React from 'react';
-import { LogOut } from 'lucide-react';
+import { LogOut, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
 interface BattleHeaderProps {
@@ -7,6 +6,7 @@ interface BattleHeaderProps {
   scores: { player: number; opponent: number };
   playerName: string;
   opponentName?: string;
+  opponentStatus?: 'connected' | 'disconnected';
   gameMode: string;
   turnTimer: number;
   onAbort: () => void;
@@ -17,6 +17,7 @@ export default function BattleHeader({
   scores,
   playerName,
   opponentName,
+  opponentStatus,
   gameMode,
   turnTimer,
   onAbort
@@ -33,9 +34,17 @@ export default function BattleHeader({
               </span>
            </div>
            <div className="flex items-baseline gap-3">
-              <h1 className="text-xl font-black text-white uppercase tracking-tighter">
-                 {playerName || t('commander')} <span className="text-slate-600 mx-1">VS</span> {gameMode === 'PvE' ? t('ghost_ai') : (opponentName || t('opponent'))}
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-black text-white uppercase tracking-tighter">
+                   {playerName || t('commander')} <span className="text-slate-600 mx-1">VS</span> {gameMode === 'PvE' ? t('ghost_ai') : (opponentName || t('opponent'))}
+                </h1>
+                {gameMode !== 'PvE' && opponentStatus === 'disconnected' && (
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-error/20 border border-error/40 rounded text-[9px] font-black text-error uppercase tracking-widest animate-pulse">
+                    <AlertTriangle className="w-3 h-3" />
+                    {t('lost_connection')}
+                  </div>
+                )}
+              </div>
               <span className="text-xs font-bold text-slate-400/50 uppercase tracking-widest">
                 {gameMode === 'PvE' ? t('simulation_mode') : t('live_combat')}
               </span>

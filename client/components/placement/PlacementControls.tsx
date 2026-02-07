@@ -10,7 +10,6 @@ interface PlacementControlsProps {
   selectedShipIndex: number | null;
   selectedOrientation: Orientation;
   gameState: any;
-  setGameMode: (mode: 'PvP' | 'PvE') => void;
   isReady?: boolean;
 }
 
@@ -21,7 +20,6 @@ export default function PlacementControls({
   selectedShipIndex,
   selectedOrientation,
   gameState,
-  setGameMode,
   isReady
 }: PlacementControlsProps) {
   const { t } = useLanguage();
@@ -81,34 +79,9 @@ export default function PlacementControls({
       </div>
     </section>
 
-    {/* TACTICAL SETTINGS TOGGLE */}
+    {/* CURRENT MODE INDICATOR */}
     <section className="flex flex-col gap-4 mt-auto">
-        <div className="flex bg-slate-950 p-1.5 rounded-xl border border-slate-800 w-full overflow-hidden">
-        <button 
-            onClick={() => !gameState.roomId && setGameMode('PvP')}
-            className={`flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center gap-1 ${
-            gameState.gameMode === 'PvP' 
-            ? 'bg-primary text-white shadow-[0_5px_15px_rgba(25,93,230,0.3)]' 
-            : 'text-slate-600 hover:text-slate-400'
-            } ${gameState.roomId ? 'opacity-50 cursor-not-allowed' : ''}`}
-        >
-            <span>{t('pvp_online')}</span>
-            <div className={`w-1 h-1 rounded-full ${gameState.gameMode === 'PvP' ? 'bg-white' : 'bg-transparent'}`}></div>
-        </button>
-        <button 
-            onClick={() => !gameState.roomId && setGameMode('PvE')}
-            className={`flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center gap-1 ${
-            gameState.gameMode === 'PvE' 
-            ? 'bg-emerald-500 text-white shadow-[0_5px_15px_rgba(16,185,129,0.3)]' 
-            : 'text-slate-600 hover:text-slate-400'
-            } ${gameState.roomId ? 'opacity-50 cursor-not-allowed' : ''}`}
-        >
-            <span>{t('pve_ghost')}</span>
-            <div className={`w-1 h-1 rounded-full ${gameState.gameMode === 'PvE' ? 'bg-white' : 'bg-transparent'}`}></div>
-        </button>
-        </div>
-
-        <div className="flex items-center justify-between px-2">
+        <div className="flex items-center justify-between px-2 py-3 bg-slate-950/50 rounded-xl border border-slate-800/50">
         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('selected_mode')}</span>
         <span className={`text-[10px] font-black uppercase tracking-widest italic ${gameState.gameMode === 'PvP' ? 'text-primary' : 'text-emerald-400'}`}>
             {gameState.gameMode === 'PvP' ? t('fleet_pvp') : t('ghost_pve')}

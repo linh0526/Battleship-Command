@@ -18,19 +18,21 @@ function LobbyContent() {
   const searchParams = useSearchParams();
   const { t } = useLanguage();
   const { gameState, setGameMode, resetGame, setPlayerName, resetScores, prepareRematch } = useGame();
-  const { socket, isConnected, startPve, joinSpecificRoom, createRoom } = useSocket();
+  const { socket, isConnected, startPve, joinSpecificRoom, createRoom, joinRandomRoom } = useSocket();
 
   const [showNameModal, setShowNameModal] = useState(false);
   const [tempName, setTempName] = useState(gameState.playerName);
   const [activeRooms, setActiveRooms] = useState<any[]>([]);
   const [onlineUsers, setOnlineUsers] = useState(0);
-  const [pendingJoinId, setPendingJoinId] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<'pvp' | 'create' | 'join' | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
 
-  // Handle room invitation from URL
+  // join from url
   useEffect(() => {
     const roomId = searchParams.get('room');
     if (roomId) {
-      setPendingJoinId(roomId);
+      setPendingId(roomId);
+      setPendingAction('join');
       setGameMode('PvP');
       setShowNameModal(true);
     }
@@ -38,70 +40,112 @@ function LobbyContent() {
 
   // Socket Events
   useEffect(() => {
-    if (socket) {
-      socket.on('rooms_update', (rooms: any[]) => {
-        setActiveRooms(rooms);
-      });
-      socket.on('player_count', (count: number) => {
-        setOnlineUsers(count);
-      });
-      socket.emit('get_active_rooms');
-      
-      return () => {
-        socket.off('rooms_update');
-        socket.off('player_count');
-      };
-    }
+    if (!socket) return;
+
+    const handleRoomsUpdate = (rooms: any[]) => {
+      setActiveRooms(rooms);
+    };
+
+    const handlePlayerCount = (count: number) => {
+      setOnlineUsers(count);
+    };
+
+    socket.on('rooms_update', handleRoomsUpdate);
+    socket.on('player_count', handlePlayerCount);
+
+    socket.emit('get_active_rooms');
+
+    return () => {
+      socket.off('rooms_update', handleRoomsUpdate);
+      socket.off('player_count', handlePlayerCount);
+    };
   }, [socket]);
 
-  // Redirection when playing
-  useEffect(() => {
-    if (gameState.gameStatus === 'playing' && gameState.isFleetReady) {
-      router.push('/battle');
-    }
-  }, [gameState.gameStatus, gameState.isFleetReady, router]);
-
+  //random name 
   const generateRandomName = () => {
-    const prefixes = ['Sea', 'Iron', 'Storm', 'Deep', 'Night', 'Wave', 'Ghost', 'Viper', 'Omega', 'Blue', 'Red', 'Dark', 'Light', 'Cyber', 'Neon'];
-    const suffixes = ['Wolf', 'Clad', 'Bringer', 'Dive', 'Raid', 'Breaker', 'Rider', 'One', 'Falcon', 'Hawk', 'Eagle', 'Shark', 'Whale', 'Dragon'];
-    const randomName = `${prefixes[Math.floor(Math.random() * prefixes.length)]}${suffixes[Math.floor(Math.random() * suffixes.length)]}${Math.floor(Math.random() * 99)}`;
-    setTempName(randomName);
+    const prefixes = [
+      'Kraken', 'Abyss', 'Tempest', 'Phantom', 'Nightfall',
+      'Nova', 'Void', 'Nyx', 'Flux', 'Echo'
+    ];
+
+    const suffixes = [
+      'Reaper', 'Corsair', 'Destroyer', 'Hunter',
+      'Prime', 'Zero', 'Vanguard', 'Raider'
+    ];
+
+    const number = Math.floor(Math.random() * 90 + 10); // 2 chữ số cho đẹp
+    const name =
+      prefixes[Math.floor(Math.random() * prefixes.length)] +
+      suffixes[Math.floor(Math.random() * suffixes.length)] +
+      number;
+
+    setTempName(name);
+    return name;
   };
 
   const handleStartPvP = () => {
     resetGame();
     setGameMode('PvP');
+    setPendingAction('pvp');
     setShowNameModal(true);
   };
 
   const handleStartPvE = () => {
+    let finalName = gameState.playerName;
+
+    if (!finalName || !finalName.trim()) {
+      finalName = generateRandomName();
+      setPlayerName(finalName);
+    }
+
     resetGame();
     setGameMode('PvE');
-    startPve(gameState.playerName);
+    startPve(finalName);
     router.push('/placement');
   };
 
   const handleCreateRoom = () => {
     resetGame();
-    createRoom();
-    router.push('/placement');
+    setGameMode('PvP');
+    setPendingAction('create');
+    setShowNameModal(true);
   };
 
   const handleJoinRequested = (id: string) => {
     resetScores();
     prepareRematch();
-    joinSpecificRoom(id);
-    router.push('/placement');
+    setGameMode('PvP');
+    setPendingId(id);
+    setPendingAction('join');
+    setShowNameModal(true);
   };
 
   const confirmNameAndStart = () => {
-    if (tempName.trim()) {
+    if (!tempName.trim() || !pendingAction) return;
       setPlayerName(tempName);
-      if (pendingJoinId) {
-        joinSpecificRoom(pendingJoinId);
+      const roomFromUrl = searchParams.get('room');
+      const targetRoomId = pendingId || roomFromUrl;
+      // switch action
+      switch (pendingAction) {
+        case 'pvp':
+          joinRandomRoom(tempName);
+          router.push('/matching');
+          break;
+        case 'create':
+          createRoom(tempName);
+          router.push('/matching');
+          break;
+        case 'join':
+          if (targetRoomId) {
+            joinSpecificRoom(targetRoomId, tempName);
+            router.push('/matching');
+          }
+          break;
       }
-      router.push('/placement');
-    }
+
+      setPendingAction(null);
+      setPendingId(null);
+      setShowNameModal(false);
   };
 
   return (

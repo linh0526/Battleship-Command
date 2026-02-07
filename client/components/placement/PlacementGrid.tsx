@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Ship } from 'lucide-react';
+import { Ship, AlertTriangle } from 'lucide-react';
 import { ShipInstance } from '@/context/GameContext';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -14,6 +14,8 @@ interface PlacementGridProps {
   activeRooms: any[];
   socketId?: string;
   isReady?: boolean;
+  isOpponentReady?: boolean;
+  opponentStatus?: 'connected' | 'disconnected';
 }
 
 export default function PlacementGrid({
@@ -22,7 +24,10 @@ export default function PlacementGrid({
   getCellStatus,
   isSearching,
   activeRooms,
-  socketId
+  socketId,
+  isReady,
+  isOpponentReady,
+  opponentStatus
 }: PlacementGridProps) {
   const { t } = useLanguage();
   return (
@@ -104,6 +109,60 @@ export default function PlacementGrid({
             {activeRooms.length === 0 && (
               <div className="text-center py-4 text-slate-600 text-[10px] font-black uppercase tracking-widest italic">{t('scanning_signals')}</div>
             )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* WAITING FOR OPPONENT OVERLAY */}
+      {isReady && !isOpponentReady && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] z-30 flex items-center justify-center p-12"
+        >
+          <div className="flex flex-col items-center gap-6 text-center max-w-sm">
+             <div className="w-24 h-24 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin flex items-center justify-center relative">
+                <Ship className="w-10 h-10 text-emerald-500 animate-pulse" />
+                <div className="absolute inset-0 rounded-full bg-emerald-500/10 animate-ping"></div>
+             </div>
+             <div>
+                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">{t('status_waiting')}</h3>
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest leading-relaxed">
+                  {t('opponent_placing')}
+                </p>
+             </div>
+             <div className="flex gap-1">
+                {[0,1,2].map(i => (
+                  <motion.div 
+                    key={i}
+                    animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
+                    transition={{ repeat: Infinity, duration: 1.5, delay: i * 0.2 }}
+                    className="w-2 h-2 rounded-full bg-emerald-500"
+                  />
+                ))}
+             </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* OPPONENT DISCONNECTED OVERLAY */}
+      {opponentStatus === 'disconnected' && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute inset-0 bg-slate-950/60 backdrop-blur-md z-[40] flex items-center justify-center p-12"
+        >
+          <div className="flex flex-col items-center gap-6 text-center max-w-sm">
+             <div className="w-24 h-24 rounded-full bg-error/10 border-4 border-error/20 flex items-center justify-center relative">
+                <AlertTriangle className="w-10 h-10 text-error animate-pulse" />
+                <div className="absolute inset-0 rounded-full bg-error/20 animate-ping"></div>
+             </div>
+             <div>
+                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">{t('lost_connection')}</h3>
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest leading-relaxed">
+                  Waiting for commander to restore uplink...
+                </p>
+             </div>
           </div>
         </motion.div>
       )}

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { useGame, ShipInstance, Orientation } from '@/context/GameContext';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { useGame, ShipInstance, Orientation, GamePhase } from '@/context/GameContext';
 import { useSocket } from '@/context/SocketContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { motion } from 'framer-motion';
@@ -24,6 +24,7 @@ const SHIP_TYPES = [
 
 export default function PlacementPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { t } = useLanguage();
   const { 
     gameState, setPlayerFleet, setFleetReady, setGameStatus, 
@@ -40,12 +41,19 @@ export default function PlacementPage() {
     statusRef.current = gameState.gameStatus;
   }, [gameState.gameStatus]);
 
+  // Ensure we are in PLACEMENT phase
+  useEffect(() => {
+    if (gameState.gameStatus !== GamePhase.PLACEMENT && gameState.gameStatus !== GamePhase.PLAYING) {
+        setGameStatus(GamePhase.PLACEMENT);
+    }
+  }, []);
+
   useEffect(() => {
     return () => {
       leaveMatchmaking();
       // Only end PvE if we are leaving the flow without starting the game
       // We check ref to avoid closure issues with state in cleanup
-      if (gameState.gameMode === 'PvE' && statusRef.current !== 'playing' && !isTransitioningRef.current) {
+      if (gameState.gameMode === 'PvE' && statusRef.current !== GamePhase.PLAYING && !isTransitioningRef.current) {
         endPve();
       }
     };
@@ -54,18 +62,52 @@ export default function PlacementPage() {
   // Listen for opponent leaving
   useEffect(() => {
     const handleOpponentLeft = () => {
+      console.warn('[PLACEMENT] Opponent left room');
+      // If we are in a room (not just waiting lobby), show the modal
       if (gameState.roomId && gameState.roomId !== 'waiting-room') {
+        setGameStatus(GamePhase.ENDED);
+        setShowAbortModal(false);
         setShowOpponentLeftModal(true);
       }
     };
     
     if (socket) {
+      const handleMatchStart = () => {
+        // Clear waiting overlay, back to placement mode
+        setGameStatus(GamePhase.PLACEMENT);
+      };
+
+      const handleRoomJoined = () => {
+        if (gameState.gameStatus === GamePhase.MATCHMAKING) {
+          socket.emit('player_room_ready', { ready: true });
+        }
+      };
+
       socket.on('opponent_left', handleOpponentLeft);
+      socket.on('match_ended', (data: any) => {
+        console.log('[MATCH] Terminated by server:', data.reason);
+        handleOpponentLeft();
+      });
+      socket.on('match_start_init', handleMatchStart);
+      socket.on('room_joined', handleRoomJoined);
+
       return () => {
         socket.off('opponent_left', handleOpponentLeft);
+        socket.off('match_ended');
+        socket.off('match_start_init', handleMatchStart);
+        socket.off('room_joined', handleRoomJoined);
       };
     }
-  }, [socket, gameState.roomId]);
+  }, [socket, gameState.roomId, gameState.gameStatus, gameState.currentTurn]);
+
+  // Notify server on tab close
+  useEffect(() => {
+    const handleUnload = () => {
+      leaveRoom();
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, [leaveRoom]);
 
   const [placedShips, setPlacedShips] = useState<ShipInstance[]>(gameState.playerFleet);
   const [selectedShipIndex, setSelectedShipIndex] = useState<number | null>(null);
@@ -266,9 +308,9 @@ export default function PlacementPage() {
              );
              
              if (waitingRoom) {
-                joinSpecificRoom(waitingRoom.id, placedShips);
+                joinSpecificRoom(waitingRoom.id, undefined, placedShips);
              } else {
-                createRoom(placedShips);
+                createRoom(undefined, placedShips);
              }
         }
         return;
@@ -298,14 +340,17 @@ export default function PlacementPage() {
   useEffect(() => {
     // Transitions to battle only when both conditions are met:
     // 1. The player has confirmed their fleet (isFleetReady)
-    // 2. The game session is officially starting (gameStatus === 'playing')
-    // For PvP: 'playing' is set by the server via 'game_start' once both are ready.
-    // For PvE: 'playing' is set immediately when the player starts.
-    if (gameState.gameStatus === 'playing' && gameState.isFleetReady) {
+    // 2. The game session is officially starting (gameStatus === PLAYING)
+    // 3. Current screen is relevant to the game flow (Golden Rule)
+    if (
+        pathname !== '/placement' &&
+        pathname !== '/waiting'
+    ) return;
+    if (gameState.gameStatus === GamePhase.PLAYING) {
       console.log('>>> REDIRECTING TO BATTLE');
       router.push('/battle');
     }
-  }, [gameState.gameStatus, gameState.isFleetReady, router]);
+  }, [gameState.gameStatus, router, pathname]);
 
   const clearFleet = () => {
     if (isReady) return;
@@ -368,6 +413,15 @@ export default function PlacementPage() {
     setSelectedShipIndex(null);
   };
 
+  const handleExitToLobby = useCallback(() => {
+    setShowAbortModal(false);
+    setShowOpponentLeftModal(false);
+    if (gameState.gameMode === 'PvE') endPve();
+    leaveRoom();
+    resetGame();
+    router.push('/');
+  }, [gameState.gameMode, endPve, leaveRoom, resetGame, router]);
+
   const isFleetComplete = placedShips.length === SHIP_TYPES.length;
 
   return (
@@ -417,7 +471,9 @@ export default function PlacementPage() {
                 isSearching={isSearching}
                 activeRooms={activeRooms}
                 socketId={socket?.id}
-                isReady={isReady} // Pass locked state
+                isReady={isReady} 
+                isOpponentReady={gameState.opponent?.fleetReady}
+                opponentStatus={gameState.opponent?.status}
               />
             </section>
           </main>
@@ -431,7 +487,7 @@ export default function PlacementPage() {
                 SHIP_TYPES={SHIP_TYPES}
                 unplacedShips={unplacedShips}
                 isPlaced={isPlaced}
-                isReady={isReady} // Pass locked state to maybe disable selection? (Needs update in Manifest if we want visual feedback, but Controls update is key)
+                isReady={isReady}
             />
 
             <PlacementControls 
@@ -441,8 +497,7 @@ export default function PlacementPage() {
                 selectedShipIndex={selectedShipIndex}
                 selectedOrientation={selectedOrientation}
                 gameState={gameState}
-                setGameMode={setGameMode}
-                isReady={isReady} // Pass locked state
+                isReady={isReady}
             />
 
             <PlacementAction 
@@ -450,7 +505,7 @@ export default function PlacementPage() {
                 isSearching={isSearching}
                 gameState={gameState}
                 handleAction={handleAction}
-                isReady={isReady} // Pass locked state
+                isReady={isReady}
             />
           </aside>
         </div>
@@ -461,28 +516,8 @@ export default function PlacementPage() {
         setShowAbortModal={setShowAbortModal}
         showOpponentLeftModal={showOpponentLeftModal}
         setShowOpponentLeftModal={setShowOpponentLeftModal}
-        onConfirmAbort={() => {
-            setShowAbortModal(false);
-            if (gameState.gameMode === 'PvE') endPve();
-            leaveRoom();
-            resetGame();
-            router.push('/');
-        }}
-        onContinueSearching={() => {
-            setShowOpponentLeftModal(false);
-            // Stay in room, just reset opponent and readiness
-            setOpponent(null);
-            setOpponentFleetReady(false);
-            setFleetReady(false);
-            setIsReady(false);
-            setGameStatus('waiting');
-            resetScores();
-        }}
-        onExitToLobby={() => {
-            setShowOpponentLeftModal(false);
-            resetGame();
-            router.push('/');
-        }}
+        onConfirmAbort={handleExitToLobby}
+        onExitToLobby={handleExitToLobby}
       />
     </div>
   );
