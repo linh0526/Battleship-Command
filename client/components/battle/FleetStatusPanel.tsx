@@ -31,8 +31,8 @@ export default function FleetStatusPanel({ playerFleet, enemyShots }: FleetStatu
            </div>
           
           {/* Fleet Health Overview */}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-             {playerFleet.map((ship, i) => {
+           <div className="grid grid-cols-1 gap-y-4">
+             {playerFleet.map((ship) => {
                const hitsOnShip = Array.from(enemyShots.entries()).filter(([key, res]) => {
                  if (res !== 'hit') return false;
                  const [r, c] = key.split('-').map(Number);
@@ -43,28 +43,43 @@ export default function FleetStatusPanel({ playerFleet, enemyShots }: FleetStatu
                  }
                  return false;
                }).length;
-               const healthPercent = Math.round(((ship.size - hitsOnShip) / ship.size) * 100);
-               const isCritical = healthPercent > 0 && healthPercent <= 30;
+               
+               const isSunk = hitsOnShip === ship.size;
 
                return (
-                 <div key={ship.id} className="flex flex-col gap-1">
-                    <div className="flex justify-between items-baseline px-0.5">
-                       <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tighter truncate w-20">{ship.name}</span>
-                       <span className={`text-xs font-black ${healthPercent === 0 ? 'text-slate-700' : isCritical ? 'text-error animate-pulse' : 'text-slate-300'}`}>
-                         {healthPercent === 0 ? 'KO' : `${healthPercent}%`}
+                 <div key={ship.id} className="flex items-center justify-between group">
+                    <div className="flex flex-col">
+                       <span className={`text-[11px] font-black uppercase tracking-tight transition-colors ${isSunk ? 'text-slate-700' : 'text-slate-300'}`}>
+                          {ship.name}
+                       </span>
+                       <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">
+                          {isSunk ? 'Neutralized' : 'Active'}
                        </span>
                     </div>
-                    <div className="h-1 w-full bg-slate-900/80 rounded-full overflow-hidden">
-                       <motion.div 
-                          initial={{ width: 0 }} 
-                          animate={{ width: `${healthPercent}%` }} 
-                          className={`h-full ${ship.shipBgColor} shadow-[0_0_8px_currentColor]`}
-                       ></motion.div>
+                    <div className="flex gap-1.5 p-1.5 bg-slate-950/40 rounded-lg border border-white/5">
+                       {Array.from({ length: ship.size }).map((_, idx) => (
+                          <div 
+                             key={idx} 
+                             className={`w-3 h-3 rounded-full border transition-all duration-500 ${
+                                idx < hitsOnShip 
+                                   ? 'bg-error border-error shadow-[0_0_10px_rgba(239,68,68,0.5)]' 
+                                   : `bg-slate-800 border-white/10 ${!isSunk ? 'group-hover:border-primary/30' : ''}`
+                             }`}
+                             style={{
+                                backgroundColor: idx >= hitsOnShip && !isSunk ? ship.shipBgColor.replace('bg-', '') : undefined,
+                                borderColor: idx >= hitsOnShip && !isSunk ? 'rgba(255,255,255,0.2)' : undefined
+                             }}
+                          >
+                            {/* If it's a tailwind class like bg-indigo-500, we might need a better way to map it, 
+                                but since shipBgColor is often bg-indigo-500, we'll try to apply it or fallback */}
+                            <div className={`w-full h-full rounded-full ${idx < hitsOnShip ? '' : ship.shipBgColor}`}></div>
+                          </div>
+                       ))}
                     </div>
                  </div>
                );
              })}
-          </div>
+           </div>
        </div>
     </div>
   );

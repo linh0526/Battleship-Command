@@ -11,12 +11,13 @@ interface LogItem {
 
 interface BattleLogProps {
   logs: LogItem[];
+  isCompact?: boolean;
 }
 
-export default function BattleLog({ logs }: BattleLogProps) {
+export default function BattleLog({ logs, isCompact = false }: BattleLogProps) {
   const { t } = useLanguage();
   return (
-    <div className="h-[220px] glass-panel bg-slate-950/40 border-slate-800/50 flex flex-col shrink-0">
+    <div className={`${isCompact ? 'flex-1 min-h-0' : 'h-[220px]'} glass-panel bg-slate-950/40 border-slate-800/50 flex flex-col shrink-0`}>
        <div className="p-3 border-b border-slate-800/20 flex items-center justify-between bg-slate-900/10">
           <div className="flex items-center gap-2">
              <History className="w-3.5 h-3.5 text-slate-500" />
@@ -32,7 +33,7 @@ export default function BattleLog({ logs }: BattleLogProps) {
                    <p className="text-xs font-black text-slate-400 uppercase leading-none tracking-tight">{log.msg}</p>
                    <p className={`text-[11px] font-bold leading-none ${
                       log.type === 'hit' ? 'text-emerald-500/80' : 
-                      log.type === 'enemy-hit' ? 'text-error/80' : 
+                      log.type === 'enemy-hit' ? 'text-red/80' : 
                       log.type === 'miss' ? 'text-slate-600' : 'text-primary/80'
                    }`}>{log.result}</p>
                 </div>

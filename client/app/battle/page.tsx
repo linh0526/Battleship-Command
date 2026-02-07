@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useGame, ShipInstance, GamePhase } from '@/context/GameContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSocket } from '@/context/SocketContext';
+import { useSettings } from '@/context/SettingsContext';
 
 import BattleGrid from '@/components/battle/BattleGrid';
 import BattleHeader from '@/components/battle/BattleHeader';
@@ -13,6 +14,7 @@ import BattleModals from '@/components/battle/BattleModals';
 import FleetStatusPanel from '@/components/battle/FleetStatusPanel';
 import BattleLog from '@/components/battle/BattleLog';
 import BattleFooter from '@/components/battle/BattleFooter';
+import { Shield } from 'lucide-react';
 
 export default function BattlePage() {
   const router = useRouter();
@@ -361,26 +363,11 @@ export default function BattlePage() {
 
   // Rematch Timer
   useEffect(() => {
-    if (gameResult) {
-        if (rematchTimer > 0) {
-            const timer = setTimeout(() => setRematchTimer(prev => prev - 1), 1000);
-            return () => clearTimeout(timer);
-        } else {
-            // If timer reached 0 and no deal was made, go back to lobby
-            // This is the decision window
-            if (!rematchRequested && !opponentWantsRematch) {
-              if (gameState.gameMode === 'PvE') endPve();
-              resetGame();
-              router.push('/');
-            } else if (rematchRequested && !opponentWantsRematch) {
-               // We asked but they didn't answer in time
-               if (gameState.gameMode === 'PvE') endPve();
-               resetGame();
-               router.push('/');
-            }
-        }
+    if (gameResult && rematchTimer > 0) {
+        const timer = setTimeout(() => setRematchTimer(prev => prev - 1), 1000);
+        return () => clearTimeout(timer);
     }
-  }, [gameResult, rematchTimer, rematchRequested, opponentWantsRematch, router]);
+  }, [gameResult, rematchTimer]);
 
   // AI Logic Response
   useEffect(() => {
@@ -532,6 +519,8 @@ export default function BattlePage() {
     router.push('/');
   }, [gameState.gameMode, endPve, leaveRoom, resetGame, router]);
 
+  const { battleLayout } = useSettings();
+
   return (
     <div className="fixed inset-0 bg-[#060912] overflow-hidden flex items-center justify-center p-6 lg:p-10">
       <BattleModals 
@@ -553,6 +542,12 @@ export default function BattlePage() {
         showAbortModal={showAbortModal}
         setShowAbortModal={setShowAbortModal}
         onConfirmAbort={handleExitToLobby}
+        stats={{
+          totalShots: totalPlayerShots,
+          hits: playerHits,
+          misses: totalPlayerShots - playerHits,
+          accuracy: accuracy
+        }}
       />
 
       <div className="w-full h-full max-w-[1440px] flex flex-col gap-6 relative">
@@ -568,47 +563,208 @@ export default function BattlePage() {
         />
 
         {/* TACTICAL INTERFACE */}
-        <div className="flex-1 min-h-0 grid grid-cols-12 gap-6">
-          
-          {/* LEFT: ENEMY DATA & TARGETING (DOMINANT) */}
-          <section className="col-span-8 flex flex-col min-h-0 bg-slate-950/20 rounded-2xl border border-white/5 relative overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-white/5 shrink-0 bg-slate-900/10">
-                <div className="flex items-center gap-3">
-                  <Target className="w-4 h-4 text-error" />
-                  <span className="text-xs font-black text-white uppercase tracking-[0.3em]">{t('targeting_matrix')}</span>
+        {battleLayout === 'tactical' ? (
+          <div className="flex-1 min-h-0 grid grid-cols-12 gap-6">
+            
+            {/* LEFT: ENEMY DATA & TARGETING (DOMINANT) */}
+            <section className="col-span-8 flex flex-col min-h-0 bg-slate-950/20 rounded-2xl border border-white/5 relative overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-white/5 shrink-0 bg-slate-900/10">
+                  <div className="flex items-center gap-3">
+                    <Target className="w-4 h-4 text-error" />
+                    <span className="text-xs font-black text-white uppercase tracking-[0.3em]">{t('targeting_matrix')}</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 px-3 py-1 bg-slate-900/60 rounded border border-white/5">
+                      <span className="text-xs font-black text-slate-500 uppercase">ID</span>
+                      <span className="text-sm font-bold text-white uppercase tracking-widest">{gameState.isPlayingPvE ? 'ghostAI' : (gameState.roomId || t('scanning'))}</span>
+                    </div>
+                  </div>
+              </div>
+
+              <div className="flex-1 relative flex items-center justify-center p-6">
+                 <div className="absolute inset-0 opacity-[0.05] pointer-events-none" 
+                      style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #0ea5e9 0px, transparent 200px)', backgroundSize: '100% 100%' }}></div>
+                 
+                 <div className="h-full aspect-square max-h-full">
+                   <BattleGrid type="enemy" fleet={aiFleet} revealedShips={revealedEnemyShips} shots={playerShots} onCellClick={handleEnemyCellClick} />
+                 </div>
+
+                 <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-10">
+                    <div className="w-[200%] h-1 bg-primary absolute top-0 left-[-50%] animate-[scan_5s_linear_infinite]"></div>
+                 </div>
+              </div>
+            </section>
+
+            {/* RIGHT: DEFENSIVE & LOGISTICS */}
+            <section className="col-span-4 flex flex-col gap-6 min-h-0">
+               <FleetStatusPanel 
+                   playerFleet={gameState.playerFleet}
+                   enemyShots={enemyShots}
+               />
+
+               <BattleLog logs={gameState.battleLogs} />
+            </section>
+          </div>
+        ) : (
+          /* PARALLEL LAYOUT */
+          <div className="flex-1 min-h-0 flex flex-col gap-6">
+            {/* TOP ROW: GRIDS */}
+            <div className="flex-[3] min-h-0 grid grid-cols-2 gap-8">
+              {/* LEFT: MY FLEET */}
+              <section className="flex flex-col min-h-0 bg-slate-950/20 rounded-2xl border border-white/5 relative overflow-hidden">
+                <div className="flex items-center justify-between p-3 border-b border-white/5 shrink-0 bg-slate-900/10">
+                    <div className="flex items-center gap-3">
+                      <Shield className="w-4 h-4 text-primary" />
+                      <span className="text-xs font-black text-white uppercase tracking-[0.3em]">{t('defensive_grid') || 'Defensive Grid'}</span>
+                    </div>
+                    <div className="px-2 py-0.5 rounded border border-emerald-500/20 bg-emerald-500/5">
+                      <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest leading-none">{t('fleet_active')}</span>
+                    </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 px-3 py-1 bg-slate-900/60 rounded border border-white/5">
-                    <span className="text-xs font-black text-slate-500 uppercase">ID</span>
-                    <span className="text-sm font-bold text-white uppercase tracking-widest">{gameState.isPlayingPvE ? 'ghostAI' : (gameState.roomId || t('scanning'))}</span>
+
+                <div className="flex-1 relative flex items-center justify-center p-4">
+                   <div className="h-full aspect-square max-h-full">
+                     <BattleGrid type="player" fleet={gameState.playerFleet} shots={enemyShots} />
+                   </div>
+                </div>
+              </section>
+
+              {/* RIGHT: ENEMY FLEET */}
+              <section className="flex flex-col min-h-0 bg-slate-950/20 rounded-2xl border border-error/5 relative overflow-hidden shadow-[inset_0_0_100px_rgba(239,68,68,0.02)]">
+                <div className="flex items-center justify-between p-3 border-b border-white/5 shrink-0 bg-slate-900/10">
+                    <div className="flex items-center gap-3">
+                      <Target className="w-4 h-4 text-error" />
+                      <span className="text-xs font-black text-white uppercase tracking-[0.3em]">{t('targeting_matrix')}</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1 bg-slate-900/60 rounded border border-white/5">
+                      <span className="text-[10px] font-black text-slate-500 uppercase">RADAR</span>
+                      <span className="text-xs font-bold text-white uppercase tracking-widest">{gameState.isPlayingPvE ? 'ghostAI' : (gameState.roomId || 'SCAN')}</span>
+                    </div>
+                </div>
+
+                <div className="flex-1 relative flex items-center justify-center p-4">
+                   <div className="h-full aspect-square max-h-full">
+                     <BattleGrid type="enemy" fleet={aiFleet} revealedShips={revealedEnemyShips} shots={playerShots} onCellClick={handleEnemyCellClick} />
+                   </div>
+                </div>
+              </section>
+            </div>
+
+            {/* BOTTOM ROW: STATUS & LOGS */}
+            <div className="flex-1 min-h-0 grid grid-cols-12 gap-6 h-[220px]">
+              {/* STATUS PANEL */}
+              <section className="col-span-4 bg-slate-950/40 rounded-xl border border-white/5 overflow-hidden flex flex-col min-h-0">
+                <div className="p-3 border-b border-white/5 bg-slate-900/20 flex items-center gap-2">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('battle_status')}</span>
+                </div>
+                <div className="flex-1 p-4 overflow-y-auto custom-scrollbar flex flex-col gap-6">
+                  {/* TWO COLUMNS FOR STATUS IN HORIZONTAL VIEW? NO, STACK THEM WITH GRID */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* PLAYER VITAL SIGNS */}
+                    <div className="space-y-3">
+                      <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] px-1">{t('your_fleet_status')}</span>
+                      <div className="space-y-2">
+                        {gameState.playerFleet.map(ship => {
+                          const hitsOnShip = Array.from(enemyShots.entries()).filter(([key, res]) => {
+                            if (res !== 'hit') return false;
+                            const [r, c] = key.split('-').map(Number);
+                            for (let j = 0; j < ship.size; j++) {
+                              const sr = ship.orientation === 'horizontal' ? ship.row : ship.row + j;
+                              const sc = ship.orientation === 'horizontal' ? ship.col + j : ship.col;
+                              if (sr === r && sc === c) return true;
+                            }
+                            return false;
+                          }).length;
+                          const isSunk = hitsOnShip === ship.size;
+                          const health = ship.size - hitsOnShip;
+
+                          return (
+                            <div key={ship.id} className="flex flex-col gap-1">
+                              <div className="flex justify-between text-[8px] font-black uppercase">
+                                <span className={isSunk ? "text-slate-700" : (ship.shipTextColor || "text-slate-400")}>{ship.name}</span>
+                                <span className={isSunk ? "text-slate-700" : "text-slate-300"}>{isSunk ? 'KO' : `${health}/${ship.size}`}</span>
+                              </div>
+                              <div className="flex gap-0.5">
+                                {Array.from({ length: ship.size }).map((_, idx) => (
+                                  <div 
+                                    key={idx} 
+                                    className={`h-1 flex-1 rounded-full transition-all duration-500 ${
+                                      idx < health 
+                                        ? `${ship.shipBgColor} shadow-[0_0_8px_currentColor] opacity-90` 
+                                        : 'bg-slate-800/80 border border-white/5'
+                                    }`} 
+                                    style={{ color: !isSunk && idx < health ? 'var(--primary)' : 'transparent' }} // Using color for currentColor if needed
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* ENEMY VITAL SIGNS */}
+                    <div className="space-y-3 border-l border-white/5 pl-4">
+                      <span className="text-[10px] font-black text-red uppercase tracking-[0.2em] px-1">{t('enemy_fleet_status')}</span>
+                      <div className="space-y-2">
+                        {(gameState.gameMode === 'PvE' ? aiFleet : [
+                          ...revealedEnemyShips,
+                          ...Array(Math.max(0, 5 - revealedEnemyShips.length)).fill(null).map((_, i) => ({ id: `unknown-${i}`, name: 'Scanning...', size: 3, isUnknown: true }))
+                        ]).map((ship: any, i) => {
+                          if (ship.isUnknown) {
+                            return (
+                              <div key={ship.id} className="flex flex-col gap-0.5 opacity-20">
+                                <div className="flex justify-between text-[7px] font-black text-red/40 uppercase">
+                                  <span>Sector {i+1}</span>
+                                  <span>?/?</span>
+                                </div>
+                                <div className="h-1 w-full bg-slate-900/50 rounded-full" />
+                              </div>
+                            )
+                          }
+                          let hitsOnShip = 0;
+                          if (gameState.gameMode === 'PvP') hitsOnShip = ship.size;
+                          else {
+                            for (let j = 0; j < ship.size; j++) {
+                              const sr = ship.orientation === 'horizontal' ? ship.row : ship.row + j;
+                              const sc = ship.orientation === 'horizontal' ? ship.col + j : ship.col;
+                              if (playerShots.get(`${sr}-${sc}`) === 'hit' || playerShots.get(`${sr}-${sc}`) === 'sunk') hitsOnShip++;
+                            }
+                          }
+                          const isSunk = hitsOnShip === ship.size;
+                          const health = ship.size - hitsOnShip;
+
+                          return (
+                            <div key={ship.id} className="flex flex-col gap-1">
+                              <div className="flex justify-between text-[8px] font-black uppercase">
+                                <span className={isSunk ? "text-red/30" : "text-red/80"}>{ship.name}</span>
+                                <span className="text-red/40">{isSunk ? 'SUNK' : `${health}/${ship.size}`}</span>
+                              </div>
+                              <div className="flex gap-0.5">
+                                {Array.from({ length: ship.size }).map((_, idx) => (
+                                  <div key={idx} className={`h-1 flex-1 rounded-full border border-red/5 ${
+                                    idx < health 
+                                      ? 'bg-red/40 shadow-[0_0_5px_rgba(244,56,56,0.2)]' 
+                                      : 'bg-slate-900/60'
+                                  }`} />
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </div>
+              </section>
+
+              {/* LOGS PANEL */}
+              <section className="col-span-8 flex flex-col min-h-0 bg-slate-950/40 rounded-xl border border-white/5 overflow-hidden">
+                <BattleLog logs={gameState.battleLogs} isCompact={true} />
+              </section>
             </div>
-
-            <div className="flex-1 relative flex items-center justify-center p-6">
-               <div className="absolute inset-0 opacity-[0.05] pointer-events-none" 
-                    style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #0ea5e9 0px, transparent 200px)', backgroundSize: '100% 100%' }}></div>
-               
-               <div className="h-full aspect-square max-h-full">
-                 <BattleGrid type="enemy" fleet={aiFleet} revealedShips={revealedEnemyShips} shots={playerShots} onCellClick={handleEnemyCellClick} />
-               </div>
-
-               <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-10">
-                  <div className="w-[200%] h-1 bg-primary absolute top-0 left-[-50%] animate-[scan_5s_linear_infinite]"></div>
-               </div>
-            </div>
-          </section>
-
-          {/* RIGHT: DEFENSIVE & LOGISTICS */}
-          <section className="col-span-4 flex flex-col gap-6 min-h-0">
-             <FleetStatusPanel 
-                 playerFleet={gameState.playerFleet}
-                 enemyShots={enemyShots}
-             />
-
-             <BattleLog logs={gameState.battleLogs} />
-          </section>
-        </div>
+          </div>
+        )}
 
         <BattleFooter accuracy={accuracy} sunkEnemyShips={sunkEnemyShips} />
       </div>

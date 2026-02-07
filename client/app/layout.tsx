@@ -6,6 +6,7 @@ import Header from "@/components/layout/Header";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { GameProvider } from "@/context/GameContext";
 import { SocketProvider } from "@/context/SocketContext";
+import { SettingsProvider } from "@/context/SettingsContext";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -33,25 +34,27 @@ export default function RootLayout({
         className={`${outfit.variable} ${jetbrainsMono.variable} font-sans antialiased bg-[#0a0e1a] text-slate-100 min-h-screen`}
       >
         <LanguageProvider>
-          <GameProvider>
-            <SocketProvider>
-              <div className="app-container">
-                <Header />
-                <main className="main-content">
-                   <div className="content-wrapper">
-                      {children}
-                   </div>
-                </main>
-                {/* <footer className="app-footer">
-                   <div className="content-wrapper px-6">
-                      <p className="text-slate-600 text-[10px] font-mono tracking-[0.5em] uppercase opacity-50 italic">
-                        Bum Boom bum bum zzzzzzzzzzz boom 
-                      </p>
-                   </div>
-                </footer> */}
-              </div>
-            </SocketProvider>
-          </GameProvider>
+          <SettingsProvider>
+            <GameProvider>
+              <SocketProvider>
+                <div className="app-container">
+                  <Header />
+                  <main className="main-content">
+                    <div className="content-wrapper">
+                        {children}
+                    </div>
+                  </main>
+                  {/* <footer className="app-footer">
+                    <div className="content-wrapper px-6">
+                        <p className="text-slate-600 text-[10px] font-mono tracking-[0.5em] uppercase opacity-50 italic">
+                          Bum Boom bum bum zzzzzzzzzzz boom 
+                        </p>
+                    </div>
+                  </footer> */}
+                </div>
+              </SocketProvider>
+            </GameProvider>
+          </SettingsProvider>
         </LanguageProvider>
       </body>
     </html>

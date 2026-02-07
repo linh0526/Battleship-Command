@@ -23,6 +23,12 @@ interface BattleModalsProps {
   showAbortModal: boolean;
   setShowAbortModal: (show: boolean) => void;
   onConfirmAbort: () => void;
+  stats?: {
+    totalShots: number;
+    hits: number;
+    misses: number;
+    accuracy: number;
+  };
 }
 
 const overlayVariants = {
@@ -61,7 +67,8 @@ export default function BattleModals({
   onExitToLobby,
   showAbortModal,
   setShowAbortModal,
-  onConfirmAbort
+  onConfirmAbort,
+  stats
 }: BattleModalsProps) {
   const { t } = useLanguage();
 
@@ -97,21 +104,21 @@ export default function BattleModals({
           onClick={() => setShowTurnNotify(false)}
           className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-auto cursor-pointer"
         >
-          <div className="bg-primary/20 backdrop-blur-xl border-y border-primary/40 w-full py-12 flex flex-col items-center gap-4 relative overflow-hidden" onClick={(e) => e.stopPropagation()}>
-             <div className="absolute inset-0 bg-primary/5 animate-pulse"></div>
+          <div className={`${currentTurn === 'player' ? 'bg-primary/20 border-primary/40' : 'bg-red/20 border-red/40'} backdrop-blur-xl border-y w-full py-12 flex flex-col items-center gap-4 relative overflow-hidden`} onClick={(e) => e.stopPropagation()}>
+             <div className={`absolute inset-0 ${currentTurn === 'player' ? 'bg-primary/5' : 'bg-red/5'} animate-pulse`}></div>
              <motion.div 
                initial={{ x: -200, opacity: 0 }}
                animate={{ x: 0, opacity: 1 }}
                className="flex items-center gap-6 relative z-10"
              >
-                <Swords className="w-12 h-12 text-primary glow-primary" />
+                <Swords className={`w-12 h-12 ${currentTurn === 'player' ? 'text-primary glow-primary' : 'text-red glow-error'}`} />
                 <div className="flex flex-col items-center">
                   <span className="text-6xl font-black text-white uppercase italic tracking-tighter text-center">
                     {currentTurn === 'player' ? t('you_go_first') : t('enemy_go_first')}
                   </span>
-                  <span className="text-xs font-bold text-primary tracking-[0.8em] uppercase text-center mt-2">{t('neural_link')}</span>
+                  <span className={`text-xs font-bold ${currentTurn === 'player' ? 'text-primary' : 'text-red'} tracking-[0.8em] uppercase text-center mt-2`}>{t('neural_link')}</span>
                 </div>
-                <Swords className="w-12 h-12 text-primary glow-primary scale-x-[-1]" />
+                <Swords className={`w-12 h-12 ${currentTurn === 'player' ? 'text-primary glow-primary' : 'text-red glow-error'} scale-x-[-1]`} />
              </motion.div>
           </div>
         </motion.div>
@@ -187,19 +194,40 @@ export default function BattleModals({
                 </p>
              </div>
 
-              <div className="flex flex-col w-full gap-3">
+             {stats && (
+               <div className="w-full grid grid-cols-2 gap-4 py-4 border-y border-white/5">
+                 <div className="flex flex-col items-center p-3 bg-slate-800/20 rounded-lg border border-white/5">
+                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{t('total_shots')}</span>
+                   <span className="text-xl font-black text-white">{stats.totalShots}</span>
+                 </div>
+                 <div className="flex flex-col items-center p-3 bg-slate-800/20 rounded-lg border border-white/5">
+                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{t('accuracy')}</span>
+                   <span className={`text-xl font-black ${stats.accuracy >= 50 ? 'text-primary' : 'text-slate-400'}`}>{stats.accuracy}%</span>
+                 </div>
+                 <div className="flex flex-col items-center p-3 bg-slate-800/20 rounded-lg border border-white/5">
+                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{t('hits')}</span>
+                   <span className="text-xl font-black text-emerald-500">{stats.hits}</span>
+                 </div>
+                 <div className="flex flex-col items-center p-3 bg-slate-800/20 rounded-lg border border-white/5">
+                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{t('misses')}</span>
+                   <span className="text-xl font-black text-slate-400">{stats.totalShots - stats.hits}</span>
+                 </div>
+               </div>
+             )}
+
+              <div className="flex flex-col w-full gap-4 mt-2">
                <button 
                  onClick={onRematch}
-                 className="w-full py-4 bg-primary hover:bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest transition-all"
+                 className="w-full py-5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-emerald-500/20 text-sm"
                >
                  {gameMode === 'PvP' ? (
                    opponentWantsRematch ? t('rematch_accept') : 
-                   rematchRequested ? t('waiting_opponent_rematch') : `${t('rematch_btn')} (${rematchTimer}s)`
-                 ) : `${t('redeploy_btn')} (${rematchTimer}s)`}
+                   rematchRequested ? t('waiting_opponent_rematch') : t('rematch_btn')
+                 ) : t('redeploy_btn')}
                </button>
                <button 
                  onClick={onReturnToBase}
-                 className="w-full py-3 text-slate-500 hover:text-white font-bold uppercase tracking-widest transition-all text-xs"
+                 className="w-full py-4 bg-primary hover:bg-blue-600 text-white rounded-xl font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-primary/20 text-xs"
                >
                  {t('return_to_base')}
                </button>

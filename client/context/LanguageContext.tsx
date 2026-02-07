@@ -164,6 +164,9 @@ const translations = {
     lost_connection: 'LOST CONNECTION',
 
     // New Battle UI
+    total_shots: 'Total Shots',
+    hits: 'Hits',
+    misses: 'Misses',
     accuracy: 'Accuracy',
     enemy_ships: 'Enemy Ships',
     momentum: 'Momentum',
@@ -189,9 +192,11 @@ const translations = {
     return_to_base: 'Return to Base',
     tactical_minimap: 'Tactical Mini-Map',
     fleet_active: 'Fleet Active',
-    neural_feed: 'Neural Feed',
+    neural_feed: 'Battle Log',
     you_go_first: 'YOU GO FIRST',
     enemy_go_first: 'ENEMY GO FIRST',
+    your_fleet_status: 'Your Fleet Status',
+    enemy_fleet_status: 'Enemy Fleet Status',
 
     // Battle Logs
     log_auto_fire: 'COMMANDER INACTIVE. AUTO-FIRE INITIATED.',
@@ -245,6 +250,18 @@ const translations = {
     no_active_ops: 'No active operations detected. Be the first to deploy.',
     sectors_detected: '{count} Sectors Detected',
     fleet_scanning: 'Active Fleet Scanning...',
+    battle_status: 'Battle Status',
+    
+    // Settings
+    settings: 'Settings',
+    settings_subtitle: 'Configure Battle Interface',
+    battle_layout: 'Battle Layout',
+    layout_tactical: 'Tactical Layout',
+    layout_tactical_desc: 'Standard view with focus on enemy grid and tactical minimap.',
+    layout_parallel: 'Parallel Matrices',
+    layout_parallel_desc: 'Two equal-sized grids displayed side-by-side without scaling down.',
+    future_updates: 'Future Updates',
+    apply_changes: 'Apply Settings',
   },
   vi: {
     // Header
@@ -399,6 +416,9 @@ const translations = {
     lost_connection: 'MẤT KẾT NỐI',
 
     // New Battle UI
+    total_shots: 'Tổng số lượt bắn',
+    hits: 'Trúng đích',
+    misses: 'Trượt',
     accuracy: 'Độ Chính Xác',
     enemy_ships: 'Tàu Địch',
     momentum: 'Thế Trận',
@@ -424,9 +444,11 @@ const translations = {
     return_to_base: 'Trở Về Căn Cứ',
     tactical_minimap: 'Bản Đồ Chiến Thuật',
     fleet_active: 'Hạm Đội Sẵn Sàng',
-    neural_feed: 'Tín Hiệu Thần Kinh',
+    neural_feed: 'NHẬT KÝ TÁC CHIẾN',
     you_go_first: 'BẠN ĐI TRƯỚC',
     enemy_go_first: 'ĐỐI THỦ ĐI TRƯỚC',
+    your_fleet_status: 'Trạng Thái Hạm Đội',
+    enemy_fleet_status: 'Trạng Thái Địch',
 
     // Battle Logs
     log_auto_fire: 'CHỈ HUY KHÔNG PHẢN HỒI. TỰ ĐỘNG KHAI HỎA.',
@@ -480,6 +502,18 @@ const translations = {
     no_active_ops: 'Không tìm thấy chiến dịch nào. Hãy là người đầu tiên tham chiến.',
     sectors_detected: 'Phát hiện {count} Khu Vực',
     fleet_scanning: 'Đang quét hạm đội...',
+    battle_status: 'CHIẾN TRẠNG',
+    
+    // Settings
+    settings: 'Cài Đặt',
+    settings_subtitle: 'Cấu Hình Giao Diện Tác Chiến',
+    battle_layout: 'Bố Cục Trận Đấu',
+    layout_tactical: 'Bố Cục Chiến Thuật',
+    layout_tactical_desc: 'Giao diện tiêu chuẩn tập trung vào lưới địch và bản đồ thu nhỏ.',
+    layout_parallel: 'Ma Trận Song Song',
+    layout_parallel_desc: 'Hai lưới kích thước bằng nhau hiển thị song song không thu nhỏ.',
+    future_updates: 'Cập Nhật Tương Lai',
+    apply_changes: 'Áp Dụng Thay Đổi',
   }
 };
 

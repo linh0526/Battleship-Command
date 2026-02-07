@@ -70,9 +70,9 @@ export default function BattleGrid({ type, fleet, revealedShips = [], shots = ne
   const labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 
   return (
-    <div className="grid grid-cols-[30px_repeat(10,1fr)] grid-rows-[30px_repeat(10,1fr)] bg-slate-800/20 w-full h-full rounded-sm overflow-hidden border border-slate-800/30">
+    <div className="grid grid-cols-[25px_repeat(10,1fr)] w-full h-full bg-slate-900/40 rounded-sm overflow-hidden border border-slate-800/50">
       {/* Top Header Labels */}
-      <div className="w-[30px] h-[30px] bg-slate-950/80 border-b border-r border-slate-900"></div>
+      <div className="w-[25px] h-[25px] bg-slate-950/80 border-b border-r border-slate-900"></div>
       {labels.map(l => (
         <div key={l} className="flex items-center justify-center bg-slate-950/80 font-mono text-[11px] font-black text-slate-500 border-b border-r border-slate-900">
           {l}
@@ -82,7 +82,7 @@ export default function BattleGrid({ type, fleet, revealedShips = [], shots = ne
       {Array.from({ length: 10 }).map((_, r) => (
         <React.Fragment key={r}>
           {/* Side Number Label */}
-          <div className="w-[30px] h-full flex items-center justify-center bg-slate-950/80 font-mono text-[11px] font-black text-slate-500 border-r border-b border-slate-900">
+          <div className="w-[25px] h-full flex items-center justify-center bg-slate-950/80 font-mono text-[10px] font-black text-slate-500 border-r border-b border-slate-900">
             {r + 1}
           </div>
           

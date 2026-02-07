@@ -28,6 +28,7 @@
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #475569;
+  --text-red: #fc4a4a;
   
   /* Grid */
   --grid-border: rgba(59, 130, 246, 0.2);
@@ -39,6 +40,7 @@
   --color-accent: var(--accent);
   --color-surface: var(--bg-surface);
   --color-text-secondary: var(--text-secondary);
+  --color-red: var(--text-red);
   
   --font-sans: 'Outfit', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;

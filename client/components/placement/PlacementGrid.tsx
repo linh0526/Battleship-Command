@@ -39,17 +39,17 @@ export default function PlacementGrid({
       <motion.div 
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="relative p-8 bg-slate-950 rounded-2xl border border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+        className="relative p-4 sm:p-8 bg-slate-950 rounded-2xl border border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-[550px]"
       >
-        <div className="grid grid-cols-11 gap-px bg-slate-800/30 p-px rounded-lg overflow-hidden select-none">
-          <div className="w-12 h-12 bg-slate-950/80"></div>
+        <div className="grid grid-cols-[30px_repeat(10,1fr)] gap-px bg-slate-800/30 p-px rounded-lg overflow-hidden select-none">
+          <div className="bg-slate-950/80 aspect-square"></div>
           {['A','B','C','D','E','F','G','H','I','J'].map(l => (
-            <div key={l} className="w-12 h-12 flex items-center justify-center bg-slate-950/80 font-mono text-xs font-black text-slate-600 border-l border-slate-900">{l}</div>
+            <div key={l} className="flex items-center justify-center bg-slate-950/80 font-mono text-[10px] sm:text-xs font-black text-slate-600 border-l border-slate-900 aspect-square">{l}</div>
           ))}
 
           {Array.from({ length: 10 }).map((_, r) => (
-            <div key={r} className="contents text-white">
-              <div className="w-12 h-12 flex items-center justify-center bg-slate-950/80 font-mono text-xs font-black text-slate-600 border-t border-slate-900">{r + 1}</div>
+            <React.Fragment key={r}>
+              <div className="flex items-center justify-center bg-slate-950/80 font-mono text-[10px] sm:text-xs font-black text-slate-600 border-t border-slate-900 aspect-square">{r + 1}</div>
               {Array.from({ length: 10 }).map((_, c) => {
                 const status = getCellStatus(r, c);
                 
@@ -59,7 +59,7 @@ export default function PlacementGrid({
                     onClick={() => handleCellClick(r, c)}
                     onMouseEnter={() => setHoverPos({r, c})}
                     onMouseLeave={() => setHoverPos(null)}
-                    className={`cell w-12 h-12 border-t border-l border-slate-900 relative group/cell transition-all cursor-crosshair
+                    className={`cell aspect-square border-t border-l border-slate-900 relative group/cell transition-all cursor-crosshair
                       ${status.type === 'preview' ? (status.valid ? `${status.color} opacity-40` : 'bg-error/30') : ''}
                       ${status.type === 'ship' ? `${status.ship?.shipBgColor} border-white/10 shadow-[inset_0_0_15px_rgba(0,0,0,0.3)]` : 'hover:bg-primary/5'}
                     `}
@@ -67,13 +67,13 @@ export default function PlacementGrid({
                     <div className="absolute top-1 left-1 w-1 h-1 bg-slate-800 rounded-full opacity-20"></div>
                     {status.type === 'ship' && (
                        <div className={`absolute inset-0 flex items-center justify-center opacity-80 ${status.ship?.shipTextColor}`}>
-                         <Ship className="w-6 h-6 drop-shadow-[0_0_8px_currentColor]" />
+                         <Ship className="w-[60%] h-[60%] drop-shadow-[0_0_8px_currentColor]" />
                        </div>
                     )}
                   </div>
                 );
               })}
-            </div>
+            </React.Fragment>
           ))}
         </div>
       </motion.div>
