@@ -1,9 +1,7 @@
-"use client";
-
 import React from 'react';
-import { X, Layout, Monitor, Volume2, Shield, Zap, Info } from 'lucide-react';
+import { X, Layout, Monitor, Volume2, Shield, Zap, Info, Palette, Grid, Radio, Map, Waves, Hexagon, Crosshair, Signal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSettings, BattleLayout } from '@/context/SettingsContext';
+import { useSettings, BattleLayout, BackgroundMode } from '@/context/SettingsContext';
 import { useLanguage } from '@/context/LanguageContext';
 
 interface SettingsModalProps {
@@ -12,7 +10,10 @@ interface SettingsModalProps {
 }
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const { battleLayout, setBattleLayout } = useSettings();
+  const { 
+    battleLayout, setBattleLayout,
+    backgroundMode, setBackgroundMode
+  } = useSettings();
   const { t } = useLanguage();
 
   const layoutOptions: { id: BattleLayout; label: string; desc: string; icon: any }[] = [
@@ -27,6 +28,37 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       label: t('layout_parallel') || 'Parallel Matrices', 
       desc: t('layout_parallel_desc') || 'Two equal-sized grids displayed side-by-side without scaling down.',
       icon: Monitor 
+    }
+  ];
+
+  const backgroundOptions: { id: BackgroundMode; label: string; desc: string; icon: any; color: string }[] = [
+    {
+      id: 'tactical-grid',
+      label: t('bg_tactical_grid') || 'Tactical Grid',
+      desc: t('bg_tactical_grid_desc') || 'Standard milspec grid.',
+      icon: Grid,
+      color: 'bg-[#0b1015]'
+    },
+    {
+      id: 'radar-sweep',
+      label: t('bg_radar_sweep') || 'Radar Sweep',
+      desc: t('bg_radar_sweep_desc') || 'Active sonar tracking.',
+      icon: Radio,
+      color: 'bg-[#05080c]'
+    },
+    {
+      id: 'dark-ocean-waves',
+      label: t('bg_dark_ocean') || 'Dark Ocean',
+      desc: t('bg_dark_ocean_desc') || 'Deep sea gradient.',
+      icon: Waves,
+      color: 'bg-[#020408]'
+    },
+    {
+      id: 'tactical-lines',
+      label: t('bg_tactical_lines') || 'HUD Lines',
+      desc: t('bg_tactical_lines_desc') || 'Heads-up tactical display.',
+      icon: Crosshair,
+      color: 'bg-[#050505]'
     }
   ];
 
@@ -93,24 +125,67 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           : 'border-white/5 bg-white/2 hover:border-white/10 hover:bg-white/5'
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className={`p-2 rounded-lg ${battleLayout === opt.id ? 'bg-primary text-white' : 'bg-slate-800 text-slate-400 group-hover:text-slate-200'}`}>
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className={`p-2 rounded-lg shrink-0 ${battleLayout === opt.id ? 'bg-primary text-white' : 'bg-slate-800 text-slate-400 group-hover:text-slate-200'}`}>
                           <opt.icon className="w-5 h-5" />
                         </div>
+                        <span className={`font-black uppercase tracking-tight ${battleLayout === opt.id ? 'text-white' : 'text-slate-300'}`}>
+                          {opt.label}
+                        </span>
                         {battleLayout === opt.id && (
-                          <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                          <div className="ml-auto w-4 h-4 rounded-full bg-primary flex items-center justify-center">
                             <div className="w-2 h-2 rounded-full bg-white" />
                           </div>
                         )}
                       </div>
-                      <span className={`font-black uppercase tracking-tight mb-1 ${battleLayout === opt.id ? 'text-white' : 'text-slate-300'}`}>
-                        {opt.label}
-                      </span>
-                      <p className="text-xs text-slate-500 leading-relaxed">
+                      <p className="text-xs text-slate-500 leading-relaxed pl-12">
                         {opt.desc}
                       </p>
                     </button>
                   ))}
+                </div>
+              </section>
+
+              {/* Background Selection */}
+              <section className="pt-4 border-t border-white/5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Palette className="w-4 h-4 text-primary" />
+                  <h3 className="text-sm font-black text-white uppercase tracking-widest">{t('settings_background') || 'Background'}</h3>
+                </div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                  {backgroundOptions.map((option) => {
+                    const isActive = backgroundMode === option.id;
+                    const Icon = option.icon;
+                    
+                    return (
+                      <button
+                        key={option.id}
+                        onClick={() => setBackgroundMode(option.id)}
+                        className={`relative group overflow-hidden flex flex-col items-start p-3 rounded-xl border transition-all ${
+                          isActive 
+                            ? 'border-primary ring-1 ring-primary/30 bg-primary/5' 
+                            : 'border-white/5 bg-slate-900/40 hover:border-white/10 hover:bg-slate-900/60'
+                        }`}
+                      >
+                         {/* Option Preview Strip */}
+                         <div className={`absolute top-0 right-0 w-12 h-12 opacity-10 rounded-bl-2xl ${option.color} group-hover:opacity-20 transition-opacity`} />
+                         
+                         <div className="flex items-center gap-2 mb-2 w-full">
+                            <div className={`p-1.5 rounded-lg shrink-0 ${isActive ? 'bg-primary text-white' : 'bg-slate-800 text-slate-400 group-hover:text-slate-200'}`}>
+                               <Icon className="w-4 h-4" />
+                            </div>
+                            <span className={`text-[10px] font-black uppercase tracking-wide truncate ${isActive ? 'text-white' : 'text-slate-300'}`}>
+                              {option.label}
+                            </span>
+                         </div>
+                         
+                         <span className="text-[10px] text-slate-500 font-medium leading-tight text-left pl-8">
+                           {option.desc}
+                         </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </section>
 

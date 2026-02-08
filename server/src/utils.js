@@ -9,7 +9,8 @@ function getRoomsList() {
             name: `Mission: ${p.playerName || 'Unknown'}`,
             captains: '1/2',
             status: 'WAITING',
-            statusColor: 'bg-amber-400'
+            statusColor: 'bg-amber-400',
+            mode: p.waitingMode || 'classic'
         });
     });
     // Thêm các trận đấu đang diễn ra
@@ -40,10 +41,11 @@ function getRoomsList() {
 
         list.push({
             id: roomId,
-            name: `Battle: ${p1} vs ${p2}`,
+            name: room.players.length === 1 ? p1 : `${p1} vs ${p2}`,
             captains: `${room.players.length}/2`,
             status: status,
             statusColor: statusColor,
+            mode: room.mode || 'classic',
             difficulty: 'VETERAN'
         });
     });

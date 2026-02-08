@@ -99,6 +99,9 @@ export default function MatchingModal({ isOpen, onClose }: MatchingModalProps) {
                  <div className="px-2 py-0.5 bg-primary/20 border border-primary/40 rounded text-[10px] font-black text-primary uppercase tracking-wider">
                     ROOM: {gameState.roomId || roomFromUrl}
                  </div>
+                 <div className={`px-2 py-0.5 border rounded text-[10px] font-black uppercase tracking-wider ${gameState.battleMode === 'salvo' ? 'bg-amber-500/20 border-amber-500/40 text-amber-500' : 'bg-blue-500/20 border-blue-500/40 text-blue-400'}`}>
+                    {t(`mode_${gameState.battleMode}`)}
+                 </div>
                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
               </div>
               <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">

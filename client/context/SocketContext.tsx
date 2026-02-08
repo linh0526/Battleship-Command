@@ -9,9 +9,9 @@ import { useLanguage } from './LanguageContext';
 interface SocketContextType {
   socket: Socket | null;
   isConnected: boolean;
-  joinRandomRoom: (nameOverride?: string, fleet?: any[]) => void;
+  joinRandomRoom: (nameOverride?: string, fleet?: any[], mode?: string) => void;
   joinSpecificRoom: (targetId: string, nameOverride?: string, fleet?: any[]) => void;
-  createRoom: (nameOverride?: string, fleet?: any[]) => void;
+  createRoom: (nameOverride?: string, fleet?: any[], mode?: string) => void;
   emitMove: (r: number, c: number) => void;
   notifyDefeat: () => void;
   emitFleetReady: (fleet: any[]) => void;
@@ -25,7 +25,7 @@ interface SocketContextType {
   onOpponentLeft: (callback: () => void) => void;
   onOpponentUnready: (callback: () => void) => void;
   
-  startPve: (name: string) => void;
+  startPve: (name: string, mode?: string) => void;
   endPve: () => void;
   
   emitRoomReady: (ready: boolean) => void;
@@ -83,7 +83,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setRoomId, setOpponent, setGameStatus, 
     setTurn, addLog, setOpponentFleetReady, setFleetReady,
     setIsPlayingPvE, setRoomReady, setOpponentRoomReady,
-    setOpponentStatus 
+    setOpponentStatus, setBattleMode 
   } = useGame();
 
   // Grace period for initial connection
@@ -125,9 +125,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setIsConnected(false);
     });
 
-    s.on('room_joined', (data: { roomId: string, opponent?: any }) => {
-      console.log('SERVER: room_joined event received for room:', data.roomId, 'Opponent data:', !!data.opponent);
+    s.on('room_joined', (data: { roomId: string, opponent?: any, mode?: 'classic' | 'salvo' }) => {
+      console.log('SERVER: room_joined event received for room:', data.roomId, 'Opponent data:', !!data.opponent, 'Mode:', data.mode);
       setRoomId(data.roomId);
+      if (data.mode) setBattleMode(data.mode);
       if (data.opponent) {
         setOpponent(data.opponent);
         setFleetReady(false);
@@ -187,18 +188,18 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       s.disconnect();
     };
-  }, [setRoomId, setOpponent, setGameStatus, setTurn, addLog, setOpponentFleetReady, setRoomReady, setOpponentRoomReady, setOpponentStatus, setFleetReady]);
+  }, [setRoomId, setOpponent, setGameStatus, setTurn, addLog, setOpponentFleetReady, setRoomReady, setOpponentRoomReady, setOpponentStatus, setFleetReady, setBattleMode]);
 
-  const joinRandomRoom = useCallback((nameOverride?: string, fleet?: any[]) => {
-    if (socket) socket.emit('join_random', { name: nameOverride || '', fleet });
+  const joinRandomRoom = useCallback((nameOverride?: string, fleet?: any[], mode?: string) => {
+    if (socket) socket.emit('join_random', { name: nameOverride || '', fleet, mode: mode || 'classic' });
   }, [socket]);
 
   const joinSpecificRoom = useCallback((targetId: string, nameOverride?: string, fleet?: any[]) => {
     if (socket) socket.emit('join_specific', { name: nameOverride || '', targetId, fleet });
   }, [socket]);
 
-  const createRoom = useCallback((nameOverride?: string, fleet?: any[]) => {
-    if (socket) socket.emit('create_room', { name: nameOverride || '', fleet });
+  const createRoom = useCallback((nameOverride?: string, fleet?: any[], mode?: string) => {
+    if (socket) socket.emit('create_room', { name: nameOverride || '', fleet, mode: mode || 'classic' });
   }, [socket]);
 
   const emitMove = useCallback((r: number, c: number) => {
@@ -260,9 +261,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (socket) socket.emit('player_defeat');
   }, [socket]);
 
-  const startPve = useCallback((name: string) => {
+  const startPve = useCallback((name: string, mode?: string) => {
     if (socket) {
-      socket.emit('start_pve', { name });
+      socket.emit('start_pve', { name, mode: mode || 'classic' });
       setIsPlayingPvE(true);
     }
   }, [socket, setIsPlayingPvE]);

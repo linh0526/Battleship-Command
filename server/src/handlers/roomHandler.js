@@ -9,6 +9,7 @@ module.exports = (io, socket) => {
     socket.on('create_room', (data) => {
         const playerName = data?.name || 'Commander';
         const fleet = data?.fleet || [];
+        const mode = data?.mode || 'classic';
         socket.playerName = playerName;
         const clientId = socket.clientId;
         
@@ -24,7 +25,7 @@ module.exports = (io, socket) => {
         } while (rooms.has(roomId));
 
         socket.join(roomId);
-        console.log(`[ROOM] Created: ${roomId} by ${playerName}`);
+        console.log(`[ROOM] Created: ${roomId} by ${playerName} (Mode: ${mode})`);
 
         rooms.set(roomId, {
             players: [
@@ -42,16 +43,18 @@ module.exports = (io, socket) => {
             ],
             turn: null,
             state: 'LOBBY',
+            mode: mode,
             logs: []
         });
 
-        socket.emit('room_joined', { roomId });
+        socket.emit('room_joined', { roomId, mode });
         io.emit('rooms_update', getRoomsList());
     });
 
     socket.on('join_random', (data) => {
         const playerName = data?.name || 'Commander';
         const fleet = data?.fleet || [];
+        const mode = data?.mode || 'classic';
         socket.playerName = playerName;
         
         handlePlayerLeave(io, socket, 'left');
@@ -72,19 +75,21 @@ module.exports = (io, socket) => {
                 ],
                 turn: null,
                 state: 'LOBBY',
+                mode: mode,
                 logs: []
             });
 
             const oppInfo = { name: opponentSocket.playerName, fleetReady: false, status: 'connected' };
             const selfInfo = { name: socket.playerName, fleetReady: false, status: 'connected' };
 
-            io.to(socket.id).emit('room_joined', { roomId, opponent: oppInfo });
-            io.to(opponentSocket.id).emit('room_joined', { roomId, opponent: selfInfo });
+            io.to(socket.id).emit('room_joined', { roomId, opponent: oppInfo, mode });
+            io.to(opponentSocket.id).emit('room_joined', { roomId, opponent: selfInfo, mode });
             io.to(opponentSocket.id).emit('opponent_joined', selfInfo);
             
             io.emit('rooms_update', getRoomsList());
         } else {
             socket.waitingFleet = fleet;
+            socket.waitingMode = mode;
             waitingPlayers.push(socket);
             socket.emit('waiting_for_opponent');
             io.emit('rooms_update', getRoomsList());
@@ -129,7 +134,7 @@ module.exports = (io, socket) => {
 
             host.ready = false;
             const hostInfo = { name: host.name, fleetReady: false, status: host.status };
-            socket.emit('room_joined', { roomId: targetId, opponent: hostInfo });
+            socket.emit('room_joined', { roomId: targetId, opponent: hostInfo, mode: room.mode });
             const guestInfo = { name: playerName, fleetReady: false, status: 'connected' };
             io.to(host.socketId).emit('opponent_joined', guestInfo);
             
@@ -146,6 +151,8 @@ module.exports = (io, socket) => {
             socket.join(roomId);
             opponentSocket.join(roomId);
 
+            const mode = opponentSocket.waitingMode || 'classic';
+
             rooms.set(roomId, {
                 players: [
                     { id: socket.clientId, clientId: socket.clientId, socketId: socket.id, status: 'connected', name: socket.playerName, ready: false, fleet: fleet, shotsReceived: new Set(), stats: { shots: 0, hits: 0, misses: 0, score: 0 } },
@@ -153,14 +160,15 @@ module.exports = (io, socket) => {
                 ],
                 turn: null,
                 state: 'LOBBY',
+                mode: mode,
                 logs: []
             });
 
             const oppInfo = { name: opponentSocket.playerName, fleetReady: false, status: 'connected' };
             const selfInfo = { name: socket.playerName, fleetReady: false, status: 'connected' };
 
-            io.to(socket.id).emit('room_joined', { roomId, opponent: oppInfo });
-            io.to(opponentSocket.id).emit('room_joined', { roomId, opponent: selfInfo });
+            io.to(socket.id).emit('room_joined', { roomId, opponent: oppInfo, mode });
+            io.to(opponentSocket.id).emit('room_joined', { roomId, opponent: selfInfo, mode });
             io.to(opponentSocket.id).emit('opponent_joined', selfInfo);
             
             io.emit('rooms_update', getRoomsList());

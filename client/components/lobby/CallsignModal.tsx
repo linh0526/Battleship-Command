@@ -12,6 +12,9 @@ interface CallsignModalProps {
   onConfirm: () => void;
   onGenerateRandom: () => void;
   t: (key: string, params?: Record<string, string>) => string;
+  showModeSelection?: boolean;
+  gameMode?: 'classic' | 'salvo';
+  setGameMode?: (mode: 'classic' | 'salvo') => void;
 }
 
 const overlayVariants = {
@@ -33,7 +36,10 @@ export default function CallsignModal({
   setTempName,
   onConfirm,
   onGenerateRandom,
-  t
+  t,
+  showModeSelection = false,
+  gameMode = 'classic',
+  setGameMode
 }: CallsignModalProps) {
   React.useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -67,7 +73,7 @@ export default function CallsignModal({
               <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">{t('identify_commander')}</p>
             </div>
 
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-6">
               <div className="relative flex items-center group/input">
                 <User className="absolute left-6 w-5 h-5 text-slate-500 pointer-events-none z-10" />
                 <input 
@@ -87,6 +93,29 @@ export default function CallsignModal({
                   <Dices className="w-5 h-5" />
                 </button>
               </div>
+
+              {showModeSelection && setGameMode && (
+                <div className="flex flex-col gap-3">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('game_mode')}</p>
+                  <div className="grid grid-cols-2 gap-3 p-1 bg-slate-900/50 border border-slate-800 rounded-xl">
+                    <button 
+                      onClick={() => setGameMode('classic')}
+                      className={`py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${gameMode === 'classic' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                      {t('mode_classic')}
+                    </button>
+                    <button 
+                      disabled
+                      className="group relative py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all bg-slate-900/30 text-slate-700 cursor-not-allowed border border-dashed border-slate-800 hover:border-primary/20 hover:bg-slate-900/50"
+                    >
+                      <span className="group-hover:opacity-0 transition-opacity duration-200">{t('mode_salvo')}</span>
+                      <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-primary font-bold">
+                          {t('coming_soon')}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
               
               <div className="flex gap-4">
                 <button 

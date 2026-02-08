@@ -53,6 +53,7 @@ export interface GlobalState {
   isPlayingPvE: boolean;
   isRoomReady: boolean;
   isOpponentRoomReady: boolean;
+  battleMode: 'classic' | 'salvo';
 }
 
 interface GameContextType {
@@ -62,6 +63,7 @@ interface GameContextType {
   setFleetReady: (ready: boolean) => void;
   setRoomId: (id: string | null) => void;
   setGameMode: (mode: 'PvP' | 'PvE') => void;
+  setBattleMode: (mode: 'classic' | 'salvo') => void;
   addLog: (log: Omit<LogEntry, 'time'>) => void;
   setOpponent: (opp: GlobalState['opponent']) => void;
   setOpponentStatus: (status: 'connected' | 'disconnected') => void;
@@ -94,7 +96,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     gameStatus: GamePhase.IDLE,
     isPlayingPvE: false,
     isRoomReady: false,
-    isOpponentRoomReady: false
+    isOpponentRoomReady: false,
+    battleMode: 'classic'
   };
 
   const [gameState, setGameState] = useState<GlobalState>(INITIAL_STATE);
@@ -106,7 +109,21 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setGameState(prev => ({ ...prev, ...parsed }));
+        // Chỉ khôi phục các thông tin cần thiết, reset trạng thái phòng/trận
+        setGameState(prev => ({ 
+          ...prev, 
+          playerName: parsed.playerName || '',
+          scores: parsed.scores || { player: 0, opponent: 0 },
+          playerFleet: parsed.playerFleet || [],
+          // Đảm bảo không tự động rơi vào trạng thái đang chơi/đang tìm
+          roomId: null,
+          gameStatus: GamePhase.IDLE,
+          isFleetReady: false,
+          isRoomReady: false,
+          isOpponentRoomReady: false,
+          opponent: null,
+          battleLogs: []
+        }));
       } catch (e) {
         console.error("Failed to parse saved state", e);
       }
@@ -117,9 +134,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   // Đồng bộ ngược lại LocalStorage khi state thay đổi
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem('battleship_state', JSON.stringify(gameState));
+      // Chỉ lưu những thông tin cần thiết để tránh lỗi auto-join khi mở lại tab
+      const stateToSave = {
+        playerName: gameState.playerName,
+        scores: gameState.scores,
+        playerFleet: gameState.playerFleet
+      };
+      localStorage.setItem('battleship_state', JSON.stringify(stateToSave));
     }
-  }, [gameState, isLoaded]);
+  }, [gameState.playerName, gameState.scores, gameState.playerFleet, isLoaded]);
 
   const setPlayerName = useCallback((name: string) => {
     setGameState(prev => ({ ...prev, playerName: name }));
@@ -139,6 +162,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const setGameMode = useCallback((mode: 'PvP' | 'PvE') => {
     setGameState(prev => ({ ...prev, gameMode: mode }));
+  }, []);
+
+  const setBattleMode = useCallback((mode: 'classic' | 'salvo') => {
+    setGameState(prev => ({ ...prev, battleMode: mode }));
   }, []);
 
   const addLog = useCallback((log: Omit<LogEntry, 'time'>) => {
@@ -221,7 +248,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       scores: { player: 0, opponent: 0 },
       isPlayingPvE: false,
       isRoomReady: false,
-      isOpponentRoomReady: false
+      isOpponentRoomReady: false,
+      battleMode: 'classic'
     }));
   }, []);
 
@@ -262,6 +290,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       setFleetReady,
       setRoomId,
       setGameMode,
+      setBattleMode,
       addLog,
       setOpponent,
       setTurn,

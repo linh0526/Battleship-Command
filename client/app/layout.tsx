@@ -3,6 +3,8 @@ import { Outfit, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import "./layout.css";
 import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
+import BackgroundWrapper from "@/components/layout/BackgroundWrapper";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { GameProvider } from "@/context/GameContext";
 import { SocketProvider } from "@/context/SocketContext";
@@ -37,20 +39,17 @@ export default function RootLayout({
           <SettingsProvider>
             <GameProvider>
               <SocketProvider>
-                <div className="app-container">
+                <div className="app-container relative isolate">
+                  <div className="absolute inset-0 -z-50">
+                    <BackgroundWrapper />
+                  </div>
                   <Header />
                   <main className="main-content">
                     <div className="content-wrapper">
                         {children}
                     </div>
                   </main>
-                  {/* <footer className="app-footer">
-                    <div className="content-wrapper px-6">
-                        <p className="text-slate-600 text-[10px] font-mono tracking-[0.5em] uppercase opacity-50 italic">
-                          Bum Boom bum bum zzzzzzzzzzz boom 
-                        </p>
-                    </div>
-                  </footer> */}
+                  <Footer />
                 </div>
               </SocketProvider>
             </GameProvider>

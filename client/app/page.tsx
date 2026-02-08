@@ -28,6 +28,7 @@ function LobbyContent() {
   const [pendingAction, setPendingAction] = useState<'pvp' | 'create' | 'join' | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [showMatchingModal, setShowMatchingModal] = useState(false);
+  const [customGameMode, setCustomGameMode] = useState<'classic' | 'salvo'>('classic');
 
   // Sync state to show matching modal if we are in a room
   useEffect(() => {
@@ -119,6 +120,7 @@ function LobbyContent() {
     resetGame();
     setGameMode('PvP');
     setPendingAction('create');
+    setCustomGameMode('classic'); // Reset to default when opening
     setShowNameModal(true);
   };
 
@@ -139,17 +141,26 @@ function LobbyContent() {
       // switch action
       switch (pendingAction) {
         case 'pvp':
-          joinRandomRoom(tempName);
-          // router.push('/matching'); // Bỏ dòng này, sẽ điều hướng tự động khi nhận được room_joined
+          // Tìm phòng đang chờ (WAITING) trong danh sách activeRooms
+          const waitingRoom = activeRooms && activeRooms.find(r => 
+            (r.status === 'WAITING' || r.status === 'waiting' || r.status === t('room_waiting')) && 
+            r.captains === '1/2'
+          );
+
+          if (waitingRoom) {
+            console.log('[LOBBY] Found waiting room, joining:', waitingRoom.id);
+            joinSpecificRoom(waitingRoom.id, tempName);
+          } else {
+            console.log('[LOBBY] No waiting room found, creating new one');
+            createRoom(tempName, undefined, 'classic'); // PvP Quick Play always classic for now
+          }
           break;
         case 'create':
-          createRoom(tempName);
-          // router.push('/matching');
+          createRoom(tempName, undefined, customGameMode);
           break;
         case 'join':
           if (targetRoomId) {
             joinSpecificRoom(targetRoomId, tempName);
-            // router.push('/matching');
           }
           break;
       }
@@ -170,6 +181,9 @@ function LobbyContent() {
         onConfirm={confirmNameAndStart}
         onGenerateRandom={generateRandomName}
         t={t}
+        showModeSelection={pendingAction === 'create'}
+        gameMode={customGameMode}
+        setGameMode={setCustomGameMode}
       />
 
       <MatchingModal 

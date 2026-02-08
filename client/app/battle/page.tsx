@@ -525,7 +525,7 @@ function BattleContent() {
   const { battleLayout } = useSettings();
 
   return (
-    <div className="fixed inset-0 bg-[#060912] overflow-hidden flex items-center justify-center p-6 lg:p-10">
+    <div className="fixed inset-0 bg-[#060912] overflow-hidden flex items-center justify-center px-6 lg:px-10 py-0">
       <BattleModals 
         showTurnNotify={showTurnNotify}
         setShowTurnNotify={setShowTurnNotify}
@@ -663,9 +663,9 @@ function BattleContent() {
                 </div>
                 <div className="flex-1 p-4 overflow-y-auto custom-scrollbar flex flex-col gap-6">
                   {/* TWO COLUMNS FOR STATUS IN HORIZONTAL VIEW? NO, STACK THEM WITH GRID */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4 min-w-0">
                     {/* PLAYER VITAL SIGNS */}
-                    <div className="space-y-3">
+                    <div className="space-y-3 min-w-0">
                       <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] px-1">{t('your_fleet_status')}</span>
                       <div className="space-y-2">
                         {gameState.playerFleet.map(ship => {
@@ -684,9 +684,9 @@ function BattleContent() {
 
                           return (
                             <div key={ship.id} className="flex flex-col gap-1">
-                              <div className="flex justify-between text-[8px] font-black uppercase">
-                                <span className={isSunk ? "text-slate-700" : (ship.shipTextColor || "text-slate-400")}>{ship.name}</span>
-                                <span className={isSunk ? "text-slate-700" : "text-slate-300"}>{isSunk ? 'KO' : `${health}/${ship.size}`}</span>
+                              <div className="flex justify-between text-[8px] font-black uppercase gap-2">
+                                <span className={`truncate ${isSunk ? "text-slate-700" : (ship.shipTextColor || "text-slate-400")}`}>{ship.name}</span>
+                                <span className={`shrink-0 ${isSunk ? "text-slate-700" : "text-slate-300"}`}>{isSunk ? 'KO' : `${health}/${ship.size}`}</span>
                               </div>
                               <div className="flex gap-0.5">
                                 {Array.from({ length: ship.size }).map((_, idx) => (
@@ -708,7 +708,7 @@ function BattleContent() {
                     </div>
 
                     {/* ENEMY VITAL SIGNS */}
-                    <div className="space-y-3 border-l border-white/5 pl-4">
+                    <div className="space-y-3 border-l border-white/5 pl-4 min-w-0">
                       <span className="text-[10px] font-black text-red uppercase tracking-[0.2em] px-1">{t('enemy_fleet_status')}</span>
                       <div className="space-y-2">
                         {(gameState.gameMode === 'PvE' ? aiFleet : [
@@ -740,9 +740,9 @@ function BattleContent() {
 
                           return (
                             <div key={ship.id} className="flex flex-col gap-1">
-                              <div className="flex justify-between text-[8px] font-black uppercase">
-                                <span className={isSunk ? "text-red/30" : "text-red/80"}>{ship.name}</span>
-                                <span className="text-red/40">{isSunk ? 'SUNK' : `${health}/${ship.size}`}</span>
+                              <div className="flex justify-between text-[8px] font-black uppercase gap-2">
+                                <span className={`truncate ${isSunk ? "text-red/30" : "text-red/80"}`}>{ship.name}</span>
+                                <span className="text-red/40 shrink-0">{isSunk ? 'SUNK' : `${health}/${ship.size}`}</span>
                               </div>
                               <div className="flex gap-0.5">
                                 {Array.from({ length: ship.size }).map((_, idx) => (

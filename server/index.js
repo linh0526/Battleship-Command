@@ -58,7 +58,8 @@ io.on('connection', (socket) => {
                     name: opponent.name, 
                     fleetReady: opponent.ready,
                     status: opponent.status 
-                } : null 
+                } : null,
+                mode: room.mode
             });
             
             if (room.turn) {

@@ -27,7 +27,8 @@ export default function HowToPlayPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-140px)] w-full max-w-[1200px] mx-auto py-12 px-6">
+    <div className="min-h-[calc(100vh-140px)] w-full flex justify-center py-12 px-4 sm:px-6 lg:px-10">
+      <div className="w-full max-w-[1600px]">
       <motion.div 
         variants={containerVariants}
         initial="hidden"
@@ -223,6 +224,7 @@ export default function HowToPlayPage() {
           </motion.button>
         </motion.div>
       </motion.div>
+      </div>
     </div>
   );
 }

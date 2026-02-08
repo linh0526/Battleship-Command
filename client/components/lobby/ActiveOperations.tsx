@@ -8,9 +8,10 @@ export type RoomStatus = 'WAITING' | 'PLACING' | 'BATTLE' | 'DANGER' | string;
 export interface ActiveRoom {
   id: string;
   name: string;
-  captains: number;
+  captains: string | number;
   status: RoomStatus;
   statusColor: string;
+  mode: 'classic' | 'salvo' | string;
 }
 
 interface ActiveOperationsProps {
@@ -60,6 +61,7 @@ const ActiveOperations = ({
               <tr className="text-slate-500">
                 <th className="px-6 font-bold py-6">{t('op_name')}</th>
                 <th className="px-6 font-bold py-6">{t('captains')}</th>
+                <th className="px-6 font-bold py-6">{t('game_mode')}</th>
                 <th className="px-6 font-bold py-6">{t('status')}</th>
                 <th className="px-6 font-bold py-6">{t('action')}</th>
               </tr>
@@ -78,6 +80,11 @@ const ActiveOperations = ({
                       <User className="w-3 h-3" />
                       {op.captains}
                     </div>
+                  </td>
+                  <td className="px-6 py-6 text-center border-r border-slate-800/30">
+                    <span className={`px-2 py-1 rounded text-[10px] ${op.mode === 'salvo' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
+                      {op.mode === 'salvo' ? t('mode_salvo') : t('mode_classic')}
+                    </span>
                   </td>
                   <td className="px-6 py-6 text-center border-r border-slate-800/30">
                     <div className="flex items-center justify-center gap-2 tracking-normal">
@@ -114,7 +121,7 @@ const ActiveOperations = ({
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={4} className="py-20 text-center text-slate-600 uppercase tracking-widest font-black italic">
+                  <td colSpan={5} className="py-20 text-center text-slate-600 uppercase tracking-widest font-black italic">
                     {t('no_active_ops')}
                   </td>
                 </tr>
