@@ -32,6 +32,7 @@ interface SocketContextType {
   onRoomReadyUpdated: (callback: (data: { playerId: string, ready: boolean }) => void) => void;
   emitStartMatch: () => void;
   onMatchStart: (callback: () => void) => void;
+  updatePlayerName: (name: string) => void;
   clientId: string | null;
 }
 
@@ -39,41 +40,13 @@ const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
 
-// Separate component for search params to allow Suspense boundary
-const UrlRoomHandler = () => {
-  const searchParams = useSearchParams();
-  const roomFromUrl = searchParams.get('room');
-  const context = useContext(SocketContext);
-  const { gameState } = useGame();
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsInitialLoad(false), 3000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if (context?.isConnected && roomFromUrl && !gameState.roomId && !isInitialLoad) {
-      const recoveryTimer = setTimeout(() => {
-        if (!gameState.roomId) {
-          console.log('[SOCKET] Auto-joining room from URL:', roomFromUrl);
-          context.socket?.emit('join_specific', { 
-            name: gameState.playerName || 'Commander', 
-            targetId: roomFromUrl 
-          });
-        }
-      }, 1000);
-      return () => clearTimeout(recoveryTimer);
-    }
-  }, [context?.isConnected, context?.socket, roomFromUrl, gameState.roomId, isInitialLoad, gameState.playerName]);
-
-  return null;
-};
+import { useAuth, useToast } from './AuthContext';
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useLanguage();
+  const { show: showToast } = useToast();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [clientId, setClientId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -83,7 +56,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setRoomId, setOpponent, setGameStatus, 
     setTurn, addLog, setOpponentFleetReady, setFleetReady,
     setIsPlayingPvE, setRoomReady, setOpponentRoomReady,
-    setOpponentStatus, setBattleMode 
+    setOpponentStatus, setBattleMode, setGameMode 
   } = useGame();
 
   // Grace period for initial connection
@@ -96,7 +69,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     if (!isInitialLoad && !isConnected && pathname !== '/') {
       console.warn('SERVER DISCONNECTED. ABORTING MISSION.');
-      alert(t('server_down_msg'));
       router.push('/');
     }
   }, [isConnected, pathname, router, t, isInitialLoad]);
@@ -125,15 +97,22 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setIsConnected(false);
     });
 
-    s.on('room_joined', (data: { roomId: string, opponent?: any, mode?: 'classic' | 'salvo' }) => {
-      console.log('SERVER: room_joined event received for room:', data.roomId, 'Opponent data:', !!data.opponent, 'Mode:', data.mode);
+    s.on('room_joined', (data: { roomId: string, opponent?: any, mode?: 'classic' | 'salvo', isPvE?: boolean }) => {
+      console.log('SERVER: room_joined event received for room:', data.roomId, 'Opponent data:', !!data.opponent, 'Mode:', data.mode, 'PvE:', data.isPvE);
       setRoomId(data.roomId);
       if (data.mode) setBattleMode(data.mode);
       if (data.opponent) {
         setOpponent(data.opponent);
         setFleetReady(false);
       }
-      setGameStatus(GamePhase.MATCHMAKING);
+      
+      if (data.isPvE) {
+        setIsPlayingPvE(true);
+        setGameMode('PvE');
+        setGameStatus(GamePhase.PLACEMENT);
+      } else {
+        setGameStatus(GamePhase.MATCHMAKING);
+      }
     });
 
     s.on('opponent_joined', (opponent: any) => {
@@ -181,6 +160,18 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setOpponentRoomReady(false);
       setOpponentStatus('disconnected');
       setGameStatus(GamePhase.MATCHMAKING);
+    });
+
+    s.on('error', (data: { msg: string }) => {
+      console.error('[SOCKET ERROR]', data.msg);
+      showToast(data.msg, 'error');
+      addLog({ msg: data.msg, type: 'info', result: 'ERROR' });
+      
+      if (data.msg.includes('Phòng không tồn tại') || data.msg.includes('đối thủ đã rời đi')) {
+          setRoomId(null);
+          setGameStatus(GamePhase.IDLE);
+          router.push('/');
+      }
     });
 
     setSocket(s);
@@ -291,6 +282,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (socket) socket.on('match_start_init', callback);
   }, [socket]);
 
+  const updatePlayerName = useCallback((name: string) => {
+    if (socket && name) {
+        socket.emit('set_name', name);
+    }
+  }, [socket]);
+
   return (
     <SocketContext.Provider value={{ 
       socket, isConnected, joinRandomRoom, joinSpecificRoom, createRoom, 
@@ -298,11 +295,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       emitRematchAccept, onRematchRequested, onRematchAccepted, leaveMatchmaking,
       leaveRoom, onOpponentLeft, onOpponentUnready, startPve, endPve,
       emitRoomReady, onRoomReadyUpdated, emitStartMatch, onMatchStart,
-      clientId
+      updatePlayerName, clientId
     }}>
-      <Suspense fallback={null}>
-        <UrlRoomHandler />
-      </Suspense>
       {children}
     </SocketContext.Provider>
   );

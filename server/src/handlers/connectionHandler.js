@@ -50,8 +50,6 @@ module.exports = (io, socket) => {
 
         // Handle room exit
         handlePlayerLeave(io, socket, 'disconnected');
-
-        if (activePve.has(socket.id)) activePve.delete(socket.id);
         
         io.emit('player_count', io.engine.clientsCount);
         io.emit('rooms_update', getRoomsList());
@@ -60,15 +58,52 @@ module.exports = (io, socket) => {
     socket.on('start_pve', (data) => {
         const playerName = data?.name || 'Commander';
         socket.playerName = playerName;
-        activePve.set(socket.id, playerName);
+        const clientId = socket.clientId;
+
+        // Ensure not in any previous room
+        handlePlayerLeave(io, socket, 'left');
+        
+        let roomId;
+        do {
+            roomId = Math.floor(1000 + Math.random() * 9000).toString();
+        } while (rooms.has(roomId));
+
+        socket.join(roomId);
+        console.log(`[PBE] Created: ${roomId} by ${playerName}`);
+
+        rooms.set(roomId, {
+            players: [
+                { 
+                    id: clientId,
+                    clientId: clientId,
+                    socketId: socket.id,
+                    status: 'connected',
+                    name: playerName, 
+                    ready: false, 
+                    fleet: [], 
+                    shotsReceived: new Set(),
+                    stats: { shots: 0, hits: 0, misses: 0, score: 0 }
+                }
+            ],
+            turn: null,
+            state: 'LOBBY',
+            isPvE: true,
+            mode: data?.mode || 'classic',
+            logs: []
+        });
+
+        socket.emit('room_joined', { roomId, mode: data?.mode || 'classic', isPvE: true });
         io.emit('rooms_update', getRoomsList());
     });
 
-    socket.on('end_pve', () => {
-        if (activePve.has(socket.id)) {
-            activePve.delete(socket.id);
-            io.emit('rooms_update', getRoomsList());
+    socket.on('set_name', (name) => {
+        if (name && typeof name === 'string') {
+             socket.playerName = name.trim();
         }
+    });
+
+    socket.on('end_pve', () => {
+        handlePlayerLeave(io, socket, 'left');
     });
 
     return { handlePlayerLeave };

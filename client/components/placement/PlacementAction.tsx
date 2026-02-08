@@ -59,18 +59,22 @@ export default function PlacementAction({
             <span>
               {!isInRoom 
                 ? t('find_match') 
-                : ((gameState.isFleetReady || isReady) ? t('status_waiting') : t('status_ready'))
+                : ((gameState.isFleetReady || isReady) 
+                    ? t('status_waiting') 
+                    : (gameState.gameMode === 'PvE' ? t('come_to_battle') : t('status_ready')))
               }
             </span>
             <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </>
         )}
       </button>
-      <div className="px-2 flex justify-between text-[11px] font-black uppercase text-slate-600 tracking-widest">
-        <span>
-          {t('status_label')}: {t('status_ready')} ({(gameState.isFleetReady ? 1 : 0) + (gameState.opponent?.fleetReady ? 1 : 0)}/2)
-        </span>
-      </div>
+      {gameState.gameMode !== 'PvE' && (
+        <div className="px-2 flex justify-between text-[11px] font-black uppercase text-slate-600 tracking-widest">
+          <span>
+            {t('status_label')}: {t('status_ready')} ({(gameState.isFleetReady ? 1 : 0) + (gameState.opponent?.fleetReady ? 1 : 0)}/2)
+          </span>
+        </div>
+      )}
     </section>
   );
 }

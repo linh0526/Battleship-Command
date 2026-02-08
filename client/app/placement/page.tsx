@@ -14,13 +14,14 @@ import PlacementControls from '@/components/placement/PlacementControls';
 import PlacementHeader from '@/components/placement/PlacementHeader';
 import PlacementAction from '@/components/placement/PlacementAction';
 import PlacementModals from '@/components/placement/PlacementModals';
+import GlobalLoading from '@/components/layout/GlobalLoading';
 
 const SHIP_TYPES = [
-  { name: 'Carrier', size: 5, icon: '🚢', id: 'CV-01', color: 'bg-indigo-500', text: 'text-indigo-400', border: 'border-indigo-500/50' },
-  { name: 'Battleship', size: 4, icon: '⚓', id: 'BB-04', color: 'bg-emerald-500', text: 'text-emerald-400', border: 'border-emerald-500/50' },
-  { name: 'Cruiser', size: 3, icon: '🛳️', id: 'CA-12', color: 'bg-amber-500', text: 'text-amber-400', border: 'border-amber-500/50' },
-  { name: 'Submarine', size: 3, icon: '🌊', id: 'SS-21', color: 'bg-fuchsia-500', text: 'text-fuchsia-400', border: 'border-fuchsia-500/50' },
-  { name: 'Destroyer', size: 2, icon: '⛵', id: 'DD-08', color: 'bg-sky-500', text: 'text-sky-400', border: 'border-sky-500/50' },
+  { name: 'ship_carrier', size: 5, icon: '🚢', id: 'CV-01', color: 'bg-indigo-500', text: 'text-indigo-400', border: 'border-indigo-500/50' },
+  { name: 'ship_battleship', size: 4, icon: '⚓', id: 'BB-04', color: 'bg-emerald-500', text: 'text-emerald-400', border: 'border-emerald-500/50' },
+  { name: 'ship_cruiser', size: 3, icon: '🛳️', id: 'CA-12', color: 'bg-amber-500', text: 'text-amber-400', border: 'border-amber-500/50' },
+  { name: 'ship_submarine', size: 3, icon: '🌊', id: 'SS-21', color: 'bg-fuchsia-500', text: 'text-fuchsia-400', border: 'border-fuchsia-500/50' },
+  { name: 'ship_destroyer', size: 2, icon: '⛵', id: 'DD-08', color: 'bg-sky-500', text: 'text-sky-400', border: 'border-sky-500/50' },
 ];
 
 function PlacementContent() {
@@ -117,7 +118,7 @@ function PlacementContent() {
   const [selectedOrientation, setSelectedOrientation] = useState<Orientation>('horizontal');
   const [hoverPos, setHoverPos] = useState<{r: number, c: number} | null>(null);
   const [isSearching, setIsSearching] = useState(false);
-  const [activeRooms, setActiveRooms] = useState<any[]>([]);
+  const [activeRooms, setActiveRooms] = useState<{id: string; status: string; [key: string]: any}[]>([]);
 
   const [isReady, setIsReady] = useState(false);
   // Unlock if fleet is cleared or incomplete
@@ -284,8 +285,8 @@ function PlacementContent() {
   };
 
   const handleAction = async () => {
-    // CASE 1: Not in a room -> ACTION: Find Match / Create Room
-    if (!gameState.roomId) {
+    // CASE 1: Not in a room OR PvE (treat PvE session as local)
+    if (!gameState.roomId || gameState.gameMode === 'PvE') {
         if (placedShips.length !== SHIP_TYPES.length) {
             alert(t('units_missing'));
             return;
@@ -298,6 +299,7 @@ function PlacementContent() {
         if (gameState.gameMode === 'PvE') {
              isTransitioningRef.current = true;
              setGameStatus('playing');
+             // Refresh Session ID
              setRoomId('pve-session-' + Date.now());
              setTurn('player');
              router.push('/battle');
@@ -320,7 +322,7 @@ function PlacementContent() {
         return;
     }
 
-    // CASE 2: In a Room -> ACTION: ready / cancel ready
+    // CASE 2: In a Room (PvP only) -> ACTION: ready / cancel ready
     if (gameState.roomId || roomFromUrl) {
         if (gameState.isFleetReady || isReady) {
              setIsReady(false);
@@ -429,61 +431,51 @@ function PlacementContent() {
   const isFleetComplete = placedShips.length === SHIP_TYPES.length;
 
   return (
-    <div className={(gameState.roomId || roomFromUrl || isSearching)
-      ? "fixed inset-0 bg-[#060912] overflow-y-auto flex flex-col items-center p-6 lg:p-10 z-[100]" 
-      : "grid grid-cols-1 lg:grid-cols-12 gap-10"
-    }>
-      <div className={(gameState.roomId || roomFromUrl || isSearching) ? "w-full max-w-[1440px] flex flex-col" : "contents"}>
-        {(gameState.roomId || roomFromUrl || isSearching) && (
-          <PlacementHeader 
-            gameState={{ ...gameState, roomId: gameState.roomId || roomFromUrl }} 
-            onAbort={() => setShowAbortModal(true)} 
-          />
-        )}
+    <div className="fixed inset-0 bg-[#060912] overflow-y-auto flex flex-col items-center p-2 z-[100]">
+      <div className="w-full max-w-[1440px] flex flex-col">
+        <PlacementHeader 
+          gameState={{ ...gameState, roomId: gameState.roomId || roomFromUrl }} 
+          onAbort={() => setShowAbortModal(true)} 
+        />
 
-        <div className={(gameState.roomId || roomFromUrl || isSearching) ? "grid grid-cols-1 lg:grid-cols-12 gap-10" : "contents"}>
-          {/* LEFT: TACTICAL PLACEMENT GRID */}
-          <main className="lg:col-span-8 flex flex-col gap-8">
-            <section>
-              {!(gameState.roomId || isSearching) && (
-                <div className="flex flex-col gap-2 mb-10">
-                  <motion.h1 
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.7 }}
-                    className="text-5xl font-black text-white italic uppercase tracking-tight mb-2"
-                  >
-                    {t('unit_deployment')}
-                  </motion.h1>
-                  <motion.p 
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.7, delay: 0.1 }}
-                    className="text-slate-500 font-medium uppercase tracking-widest text-xs"
-                  >
-                    {t('deployment_desc')}
-                  </motion.p>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          {/* LEFT: TACTICAL PLACEMENT FRAME */}
+          <main className="lg:col-span-9 flex flex-col gap-8 h-full">
+            <div className="glass-panel p-2 bg-[#1e293b]/10 border-slate-800/40 flex flex-row items-stretch gap-2 min-h-[600px] rounded-3xl overflow-hidden">
+                {/* TOOLBAR SIDEBAR */}
+                <div className="flex flex-col gap-4 p-2 bg-slate-950/40 rounded-2xl border border-white/5">
+                  <PlacementControls 
+                      rotateShip={rotateShip}
+                      autoDeploy={autoDeploy}
+                      clearFleet={clearFleet}
+                      selectedShipIndex={selectedShipIndex}
+                      selectedOrientation={selectedOrientation}
+                      gameState={gameState}
+                      isReady={isReady}
+                  />
                 </div>
-              )}
-
-              <PlacementGrid
-                placedShips={placedShips}
-                hoverPos={hoverPos}
-                handleCellClick={handleCellClick}
-                setHoverPos={setHoverPos}
-                getCellStatus={getCellStatus}
-                isSearching={isSearching}
-                activeRooms={activeRooms}
-                socketId={socket?.id}
-                isReady={isReady} 
-                isOpponentReady={gameState.opponent?.fleetReady}
-                opponentStatus={gameState.opponent?.status}
-              />
-            </section>
+                
+                {/* GRID SECTION */}
+                <div className="flex-1 relative bg-slate-950/20 rounded-2xl overflow-hidden group">
+                  <PlacementGrid
+                    placedShips={placedShips}
+                    hoverPos={hoverPos}
+                    handleCellClick={handleCellClick}
+                    setHoverPos={setHoverPos}
+                    getCellStatus={getCellStatus}
+                    isSearching={isSearching}
+                    activeRooms={activeRooms}
+                    socketId={socket?.id}
+                    isReady={isReady} 
+                    isOpponentReady={gameState.opponent?.fleetReady}
+                    opponentStatus={gameState.opponent?.status}
+                  />
+                </div>
+            </div>
           </main>
 
-          {/* RIGHT: UNIT MANIFEST & TOOLS */}
-          <aside className="lg:col-span-4 flex flex-col gap-8">
+          {/* RIGHT: UNIT MANIFEST & ACTION */}
+          <aside className="lg:col-span-3 flex flex-col gap-8">
             <ShipManifest 
                 placedShips={placedShips}
                 selectedShipIndex={selectedShipIndex}
@@ -491,16 +483,6 @@ function PlacementContent() {
                 SHIP_TYPES={SHIP_TYPES}
                 unplacedShips={unplacedShips}
                 isPlaced={isPlaced}
-                isReady={isReady}
-            />
-
-            <PlacementControls 
-                rotateShip={rotateShip}
-                autoDeploy={autoDeploy}
-                clearFleet={clearFleet}
-                selectedShipIndex={selectedShipIndex}
-                selectedOrientation={selectedOrientation}
-                gameState={gameState}
                 isReady={isReady}
             />
 
@@ -529,16 +511,7 @@ function PlacementContent() {
 
 export default function PlacementPage() {
   return (
-    <Suspense fallback={
-      <div className="h-[calc(100vh-140px)] w-full flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-black uppercase tracking-widest text-xs animate-pulse">
-            Loading Tactical Interface...
-          </p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<GlobalLoading messageKey="loading_tactical_interface" />}>
       <PlacementContent />
     </Suspense>
   );

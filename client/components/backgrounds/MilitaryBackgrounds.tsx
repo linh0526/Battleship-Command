@@ -112,29 +112,99 @@ export const DarkOceanWavesBackground = () => (
 
 // 4. Tactical Lines (HUD Quân Sự) - Ultra Tech
 export const TacticalLinesBackground = () => (
-  <FullScreen className="bg-black">
-    {/* Central Target HUD */}
-    <div className="absolute inset-0 flex items-center justify-center">
+  <FullScreen className="bg-[#020508]">
+    {/* Subtle Base Grid */}
+    <div className="absolute inset-0 opacity-5" 
+      style={{
+        backgroundImage: `linear-gradient(to right, rgba(34, 211, 238, 0.2) 1px, transparent 1px),
+                          linear-gradient(to bottom, rgba(34, 211, 238, 0.2) 1px, transparent 1px)`,
+        backgroundSize: '40px 40px'
+      }}
+    />
+
+    {/* Central Target HUD - Multi Layered */}
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
       <motion.div animate={{ rotate: 360 }} transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
-        className="w-[70vh] h-[70vh] border border-cyan-500/10 rounded-full flex items-center justify-center">
-        <div className="w-[68vh] h-[68vh] border-[4px] border-dashed border-cyan-500/5 rounded-full" />
+        className="w-[80vh] h-[80vh] border border-cyan-500/10 rounded-full flex items-center justify-center relative">
+        <div className="w-[78vh] h-[78vh] border-[4px] border-dashed border-cyan-500/5 rounded-full" />
+        {/* Orbiting points */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-cyan-400 blur-[2px] rounded-full shadow-[0_0_10px_#22d3ee]" />
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-cyan-400 blur-[2px] rounded-full shadow-[0_0_10px_#22d3ee]" />
       </motion.div>
+
+      <motion.div animate={{ rotate: -360 }} transition={{ duration: 100, repeat: Infinity, ease: 'linear' }}
+        className="absolute w-[60vh] h-[60vh] border border-cyan-500/5 rounded-full border-t-cyan-500/20 border-b-cyan-500/20" />
       
-      <div className="absolute w-[95%] h-[1px] bg-cyan-500/10" />
-      <div className="absolute w-[1px] h-[95%] bg-cyan-500/10" />
+      <div className="absolute w-[98%] h-[1px] bg-cyan-500/10 shadow-[0_0_15px_rgba(34,211,238,0.1)]" />
+      <div className="absolute w-[1px] h-[98%] bg-cyan-500/10 shadow-[0_0_15px_rgba(34,211,238,0.1)]" />
+
+      {/* Target Crosshair */}
+      <div className="absolute w-20 h-[2px] bg-cyan-500/40" />
+      <div className="absolute h-20 w-[2px] bg-cyan-500/40" />
     </div>
 
-    {/* Bright HUD Brackets */}
-    <div className="absolute inset-8 border border-cyan-500/10 opacity-30" />
-    <div className="absolute top-8 left-8 w-24 h-24 border-t-2 border-l-2 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)]" />
-    <div className="absolute bottom-8 right-8 w-24 h-24 border-b-2 border-r-2 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)]" />
+    {/* HUD Brackets - All Corners */}
+    <div className="absolute inset-10 border border-cyan-500/5 opacity-20 pointer-events-none" />
+    
+    {/* Corner Details */}
+    {[
+      "top-10 left-10 border-t-2 border-l-2",
+      "top-10 right-10 border-t-2 border-r-2",
+      "bottom-10 left-10 border-b-2 border-l-2",
+      "bottom-10 right-10 border-b-2 border-r-2"
+    ].map((pos, i) => (
+      <div key={i} className={`absolute w-32 h-32 border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.3)] ${pos} pointer-events-none`}>
+        <div className={`absolute ${pos.includes('top') ? 'top-[-2px]' : 'bottom-[-2px]'} ${pos.includes('left') ? 'left-4' : 'right-4'} w-12 h-1 bg-cyan-400/60`} />
+        <div className={`absolute ${pos.includes('left') ? 'left-[-2px]' : 'right-[-2px]'} ${pos.includes('top') ? 'top-4' : 'bottom-4'} h-12 w-1 bg-cyan-400/60`} />
+      </div>
+    ))}
 
-    {/* Scrolling Log Data */}
-    <div className="absolute left-10 top-1/2 -translate-y-1/2 font-mono text-[9px] text-cyan-400/40 uppercase tracking-widest hidden lg:block">
-      <p>SYSTEM_REBOOT... OK</p>
-      <p>NEURAL_LINK... CONNECTED</p>
-      <p>FLEET_SYNC... 100%</p>
-      <p className="text-red-500/60 animate-pulse">WAR_MODE_ENGAGED</p>
+    {/* Floating HUD Elements */}
+    <div className="absolute left-16 top-1/2 -translate-y-1/2 font-mono text-[9px] text-cyan-400/60 uppercase tracking-[0.3em] hidden xl:flex flex-col gap-6 pointer-events-none">
+      <div className="space-y-1 bg-cyan-950/20 p-3 border-l-2 border-cyan-500/40">
+        <p className="text-cyan-300">CORE_VITAL: STABLE</p>
+        <p>SAT_LINK: ONLINE</p>
+        <p>ENCRYPTION: AES-256</p>
+        <p className="text-xs font-black mt-2">SECTOR_7A_SCAN</p>
+      </div>
+      
+      <div className="space-y-1 opacity-40">
+        <p>LAT: 35.6895° N</p>
+        <p>LONG: 139.6917° E</p>
+        <p>DEPTH: 2,450M</p>
+      </div>
+
+      <motion.div 
+        animate={{ opacity: [0.2, 0.6, 0.2] }}
+        transition={{ duration: 2, repeat: Infinity }}
+        className="text-red-500 font-black border border-red-500/30 p-2 bg-red-500/5 text-center"
+      >
+        THREAT_DETECTED
+      </motion.div>
     </div>
+
+    {/* Right Side Data Stream */}
+    <div className="absolute right-16 bottom-24 font-mono text-[8px] text-cyan-400/40 hidden xl:block pointer-events-none">
+       <div className="flex flex-col items-end gap-1">
+          {[...Array(8)].map((_, i) => (
+            <motion.div 
+              key={i} 
+              animate={{ x: [0, -5, 0], opacity: [0.3, 0.6, 0.3] }}
+              transition={{ duration: 3, delay: i * 0.2, repeat: Infinity }}
+            >
+              {Math.random().toString(16).toUpperCase().substring(2, 14)}
+            </motion.div>
+          ))}
+       </div>
+    </div>
+
+    {/* Scanning Line - HUD Style */}
+    <motion.div 
+      animate={{ top: ['0%', '100%'] }}
+      transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+      className="absolute left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent shadow-[0_0_20px_rgba(34,211,238,0.5)] z-0 pointer-events-none"
+    />
+
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(2,5,8,0.8)_100%)] pointer-events-none" />
   </FullScreen>
 );

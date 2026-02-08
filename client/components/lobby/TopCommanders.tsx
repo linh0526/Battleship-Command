@@ -16,8 +16,8 @@ export default function TopCommanders({ t }: TopCommandersProps) {
   ];
 
   return (
-    <section className="flex flex-col gap-6 shrink-0">
-      <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-3 text-white">
+    <section className="flex flex-col gap-6 shrink-0 p-1">
+      <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-3 text-white py-1">
          <Trophy className="w-4 h-4 text-warning" />
          {t('top_commanders')}
       </h3>

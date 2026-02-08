@@ -35,7 +35,7 @@ export default function ShipManifest({
         <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">{placedShips.length} / 5 {t('units_placed_lbl')}</span>
       </div>
 
-      <div className="glass-panel p-6 bg-[#1e293b]/20 border-slate-800 flex flex-col gap-2">
+      <div className="glass-panel p-4 bg-[#1e293b]/20 border-slate-800 flex flex-col gap-2">
          <div className="space-y-2">
            {SHIP_TYPES.map((s, i) => {
              const isThisShipPlaced = isPlaced(s.name);
@@ -66,8 +66,15 @@ export default function ShipManifest({
                       <span className={isThisShipSelected ? 'text-white' : s.text}>{s.icon}</span>
                     </div>
                      <div>
-                      <p className={`text-sm font-black uppercase tracking-tight ${isThisShipSelected ? 'text-white' : s.text}`}>{s.name}</p>
-                      <p className="text-[11px] text-slate-500 font-mono tracking-tighter italic">{t('registry')}: {s.id} // {t('length')}: {s.size}U</p>
+                      <p className={`text-sm font-black uppercase tracking-tight ${isThisShipSelected ? 'text-white' : s.text}`}>{t(s.name)}</p>
+                      <div className="flex gap-1 mt-1">
+                        {Array.from({ length: s.size }).map((_, idx) => (
+                          <div 
+                            key={idx} 
+                            className={`w-2.5 h-2.5 rounded-sm border ${isThisShipSelected ? 'bg-white/40 border-white/20' : `${s.color.replace('bg-', 'bg-opacity-40 ')} ${s.border}`}`}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </div>
                   {isThisShipPlaced && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}

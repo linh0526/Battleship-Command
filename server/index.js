@@ -2,9 +2,23 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const mongoose = require('mongoose');
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
+app.use(express.json()); // Allow parsing JSON bodies
+
+// MongoDB Connection
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log('[DB] MongoDB Connected'))
+    .catch(err => console.error('[DB] Connection Error:', err));
+
+// Auth Routes
+const authRoutes = require('./src/routes/auth');
+const roomRoutes = require('./src/routes/room');
+app.use('/api/auth', authRoutes);
+app.use('/api/room', roomRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -15,6 +29,8 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 3001;
+
+const Message = require('./src/models/Message');
 
 // Import state, utils, and handlers
 const { rooms, waitingPlayers, activePve } = require('./src/state');
@@ -84,6 +100,34 @@ io.on('connection', (socket) => {
 
     // Initial broadcast
     socket.emit('rooms_update', getRoomsList());
+    
+    // Send chat history
+    const sendChatHistory = () => {
+        Message.find().sort({ timestamp: -1 }).limit(20)
+            .then(messages => {
+                socket.emit('chat_history', messages.reverse());
+            })
+            .catch(err => console.error('[CHAT] Fetch error:', err));
+    };
+
+    sendChatHistory();
+
+    socket.on('get_chat_history', sendChatHistory);
+
+    socket.on('send_chat', async (data) => {
+        try {
+            const newMessage = new Message({
+                user: socket.playerName || 'Guest',
+                msg: data.msg,
+                type: 'msg'
+            });
+            
+            await newMessage.save();
+            io.emit('chat_update', newMessage);
+        } catch (err) {
+            console.error('[CHAT] Save error:', err);
+        }
+    });
 });
 
 server.listen(PORT, () => {

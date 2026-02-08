@@ -106,7 +106,7 @@ function MatchingContent() {
              </div>
              <div className="flex items-center gap-2 text-emerald-400">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span className="text-[10px] font-black uppercase tracking-widest">Neural Link Active</span>
+                <span className="text-[10px] font-black uppercase tracking-widest">{t('connection_active')}</span>
              </div>
           </div>
           <h1 className="text-5xl font-black text-white italic uppercase tracking-tighter">
@@ -207,7 +207,7 @@ function MatchingContent() {
                     <div className="w-1 h-1 rounded-full bg-slate-700"></div>
                     <div className="flex items-center gap-1">
                         <Shield className="w-3 h-3" />
-                        <span className="text-[10px] font-bold uppercase">Neural Link Syncing</span>
+                        <span className="text-[10px] font-bold uppercase">{t('connection_syncing')}</span>
                     </div>
                   </div>
                 </div>
@@ -221,7 +221,7 @@ function MatchingContent() {
                 <div className="w-20 h-20 rounded-full border-4 border-slate-800 border-t-primary animate-spin"></div>
                 <div>
                   <p className="text-white font-black uppercase tracking-widest mb-2 italic">{t('scanning_frequencies')}</p>
-                  <p className="text-slate-500 text-xs font-medium uppercase tracking-widest leading-relaxed">{t('waiting_neural_link')}</p>
+                  <p className="text-slate-500 text-xs font-medium uppercase tracking-widest leading-relaxed">{t('waiting_connection')}</p>
                 </div>
                 <div className="px-4 py-2 bg-slate-800/50 rounded-lg">
                    <p className="text-[10px] font-mono text-slate-500">ENCRYPTION: AES-256-GCM</p>
@@ -304,7 +304,7 @@ function MatchingContent() {
           <div className="glass-panel p-6 border border-slate-800/50 flex items-center justify-between text-slate-500">
              <div className="flex flex-col">
                 <span className="text-[10px] font-black uppercase tracking-widest">Server Latency</span>
-                <span className="text-xs font-mono">12ms (Neural-Connect)</span>
+                <span className="text-xs font-mono">12ms (Active Connection)</span>
              </div>
              <div className="w-1 h-8 bg-slate-800"></div>
              <div className="flex flex-col text-right">
@@ -318,18 +318,23 @@ function MatchingContent() {
   );
 }
 
+function MatchingLoading() {
+  const { t } = useLanguage();
+  return (
+    <div className="h-[calc(100vh-140px)] w-full flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+        <p className="text-slate-500 font-black uppercase tracking-widest text-xs animate-pulse">
+          {t('syncing_connection')}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function MatchingPage() {
   return (
-    <Suspense fallback={
-      <div className="h-[calc(100vh-140px)] w-full flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-black uppercase tracking-widest text-xs animate-pulse">
-            Syncing Neural Link...
-          </p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<MatchingLoading />}>
       <MatchingContent />
     </Suspense>
   );

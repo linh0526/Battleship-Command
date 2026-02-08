@@ -62,7 +62,7 @@ export default function BattleHeader({
         <div className="flex items-center gap-4 sm:gap-8">
           <div className="flex flex-col items-end">
             <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest mb-1">{t('status_label')}</span>
-            <span className={`text-xl font-black uppercase italic tracking-tight leading-none transition-all ${
+            <span className={`text-xl font-black uppercase italic tracking-tight leading-none transition-all py-0.5 ${
               currentTurn === 'player' ? 'text-primary glow-primary' : 'text-red glow-error'
             }`}>
               {currentTurn === 'player' ? t('your_turn') : t('enemy_turn')}

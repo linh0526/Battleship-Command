@@ -18,6 +18,19 @@ function getRoomsList() {
         const p1 = room.players[0]?.name || 'Unknown';
         const p2 = room.players[1]?.name || 'Waiting...';
         
+        if (room.isPvE) {
+            list.push({
+                id: roomId,
+                name: `${p1} vs Ghost AI`, // Special naming for PvE
+                captains: '1/1', // Special captain count for PvE
+                status: 'DANGER',
+                statusColor: 'bg-error',
+                mode: room.mode || 'classic',
+                difficulty: 'VETERAN'
+            });
+            return;
+        }
+
         let status = 'WAITING';
         let statusColor = 'bg-amber-400';
         
@@ -49,16 +62,7 @@ function getRoomsList() {
             difficulty: 'VETERAN'
         });
     });
-    // Thêm các trận PvE đang diễn ra
-    activePve.forEach((playerName, socketId) => {
-        list.push({
-            id: 'GhostAI',
-            name: `PBE: ${playerName}`,
-            captains: '1/1',
-            status: 'DANGER',
-            statusColor: 'bg-error'
-        });
-    });
+
     return list;
 }
 

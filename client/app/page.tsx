@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
 import { useSocket } from '@/context/SocketContext';
+import { useAuth } from '@/context/AuthContext';
 
 // Splitted Components
 import CallsignModal from '@/components/lobby/CallsignModal';
@@ -13,13 +14,17 @@ import LobbyHero from '@/components/lobby/LobbyHero';
 import ActiveOperations from '@/components/lobby/ActiveOperations';
 import TopCommanders from '@/components/lobby/TopCommanders';
 import LobbyChat from '@/components/lobby/LobbyChat';
+import ConnectionOverlay from '@/components/lobby/ConnectionOverlay';
+import GlobalLoading from '@/components/layout/GlobalLoading';
+
 
 function LobbyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useLanguage();
   const { gameState, setGameMode, resetGame, setPlayerName, resetScores, prepareRematch } = useGame();
-  const { socket, isConnected, startPve, joinSpecificRoom, createRoom, joinRandomRoom } = useSocket();
+  const { socket, isConnected, startPve, joinSpecificRoom, createRoom, joinRandomRoom, updatePlayerName } = useSocket();
+  const { user, isAuthenticated } = useAuth();
 
   const [showNameModal, setShowNameModal] = useState(false);
   const [tempName, setTempName] = useState(gameState.playerName);
@@ -30,25 +35,40 @@ function LobbyContent() {
   const [showMatchingModal, setShowMatchingModal] = useState(false);
   const [customGameMode, setCustomGameMode] = useState<'classic' | 'salvo'>('classic');
 
-  // Sync state to show matching modal if we are in a room
+
   useEffect(() => {
-    if (gameState.roomId && gameState.roomId !== 'waiting-room') {
+    if (gameState.roomId && gameState.roomId !== 'waiting-room' && gameState.gameMode !== 'PvE') {
       setShowMatchingModal(true);
     } else {
       setShowMatchingModal(false);
     }
-  }, [gameState.roomId]);
+  }, [gameState.roomId, gameState.gameMode]);
+  
+  // Auto-sync authenticated user name to game state
+  useEffect(() => {
+    if (isAuthenticated && user?.username && gameState.playerName !== user.username) {
+      setPlayerName(user.username);
+    }
+  }, [isAuthenticated, user, setPlayerName, gameState.playerName]);
 
   // join from url
   useEffect(() => {
     const roomId = searchParams.get('room');
-    if (roomId) {
-      setPendingId(roomId);
-      setPendingAction('join');
-      setGameMode('PvP');
-      setShowNameModal(true);
+    if (roomId && isConnected) {
+      if (isAuthenticated && user) {
+        setPlayerName(user.username);
+        setGameMode('PvP');
+        joinSpecificRoom(roomId, user.username);
+      } else {
+        setPendingId(roomId);
+        setPendingAction('join');
+        setGameMode('PvP');
+        setShowNameModal(true);
+      }
+      // Cleanup URL after processing
+      router.replace('/', { scroll: false });
     }
-  }, [searchParams, setGameMode]);
+  }, [searchParams, setGameMode, isAuthenticated, user, setPlayerName, joinSpecificRoom, isConnected, router]);
 
   // Socket Events
   useEffect(() => {
@@ -73,6 +93,13 @@ function LobbyContent() {
     };
   }, [socket]);
 
+  // Sync name to socket
+  useEffect(() => {
+    if (isConnected && gameState.playerName) {
+      updatePlayerName(gameState.playerName);
+    }
+  }, [isConnected, gameState.playerName, updatePlayerName]);
+
   //random name 
   const generateRandomName = () => {
     const prefixes = [
@@ -95,23 +122,41 @@ function LobbyContent() {
     return name;
   };
 
+  const processPvpAction = (name: string) => {
+    const waitingRoom = activeRooms && activeRooms.find(r => 
+      (r.status === 'WAITING' || r.status === 'waiting' || r.status === t('room_waiting')) && 
+      r.captains === '1/2'
+    );
+
+    if (waitingRoom) {
+      joinSpecificRoom(waitingRoom.id, name);
+    } else {
+      createRoom(name, undefined, 'classic'); 
+    }
+  };
+
   const handleStartPvP = () => {
     resetGame();
     setGameMode('PvP');
-    setPendingAction('pvp');
-    setShowNameModal(true);
+    if (isAuthenticated && user) {
+      setPlayerName(user.username);
+      processPvpAction(user.username);
+    } else {
+      setPendingAction('pvp');
+      setShowNameModal(true);
+    }
   };
 
   const handleStartPvE = () => {
-    let finalName = gameState.playerName;
+    resetGame();
+    setGameMode('PvE');
+    let finalName = isAuthenticated && user ? user.username : gameState.playerName;
 
     if (!finalName || !finalName.trim()) {
       finalName = generateRandomName();
-      setPlayerName(finalName);
     }
-
-    resetGame();
-    setGameMode('PvE');
+    
+    setPlayerName(finalName);
     startPve(finalName);
     router.push('/placement');
   };
@@ -119,18 +164,28 @@ function LobbyContent() {
   const handleCreateRoom = () => {
     resetGame();
     setGameMode('PvP');
-    setPendingAction('create');
-    setCustomGameMode('classic'); // Reset to default when opening
-    setShowNameModal(true);
+    setCustomGameMode('classic');
+    if (isAuthenticated && user) {
+      setPlayerName(user.username);
+      createRoom(user.username, undefined, 'classic');
+    } else {
+      setPendingAction('create');
+      setShowNameModal(true);
+    }
   };
 
   const handleJoinRequested = (id: string) => {
     resetScores();
     prepareRematch();
     setGameMode('PvP');
-    setPendingId(id);
-    setPendingAction('join');
-    setShowNameModal(true);
+    if (isAuthenticated && user) {
+      setPlayerName(user.username);
+      joinSpecificRoom(id, user.username);
+    } else {
+      setPendingId(id);
+      setPendingAction('join');
+      setShowNameModal(true);
+    }
   };
 
   const confirmNameAndStart = () => {
@@ -170,8 +225,12 @@ function LobbyContent() {
       setShowNameModal(false);
   };
 
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 w-full h-[calc(100vh-140px)] mt-6 overflow-hidden">
+    <div className="flex flex-col gap-10 w-full mt-6 pb-20">
+      {!isConnected && (
+        <ConnectionOverlay />
+      )}
       {/* Name Entry Modal */}
       <CallsignModal 
         show={showNameModal}
@@ -191,44 +250,43 @@ function LobbyContent() {
         onClose={() => setShowMatchingModal(false)}
       />
 
-      {/* LEFT COLUMN: Main Actions & Active Ops */}
-      <main className="lg:col-span-9 flex flex-col gap-12 ">
-        <LobbyHero 
-          onStartPvP={handleStartPvP}
-          onStartPvE={handleStartPvE}
-          onCreateRoom={handleCreateRoom}
-          t={t}
-        />
+      {/* TOP SECTION: Hero & Leaderboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 w-full">
+        <div className="lg:col-span-9">
+          <LobbyHero 
+            onStartPvP={handleStartPvP}
+            onStartPvE={handleStartPvE}
+            onCreateRoom={handleCreateRoom}
+            t={t}
+          />
+        </div>
+        
+        <div className="lg:col-span-3 flex flex-col">
+          <TopCommanders t={t} />
+        </div>
 
-        <ActiveOperations 
-          activeRooms={activeRooms}
-          isConnected={isConnected}
-          onJoinRoom={handleJoinRequested}
-          t={t}
-        />
-      </main>
-
-      {/* RIGHT COLUMN: Leaderboard & Chat */}
-      <aside className="lg:col-span-3 flex flex-col gap-10 h-full overflow-hidden">
-        <TopCommanders t={t} />
-        <LobbyChat onlineUsers={onlineUsers} t={t} />
-      </aside>
+        {/* ROW 2: Active Ops & Chat */}
+        <div className="lg:col-span-8 flex flex-col">
+          <ActiveOperations 
+            activeRooms={activeRooms}
+            isConnected={isConnected}
+            onJoinRoom={handleJoinRequested}
+            t={t}
+          />
+        </div>
+        
+        <div className="lg:col-span-4 flex flex-col">
+          <LobbyChat onlineUsers={onlineUsers} t={t} />
+        </div>
+      </div>
     </div>
   );
 }
 
+
 export default function LobbyPage() {
   return (
-    <Suspense fallback={
-      <div className="h-[calc(100vh-140px)] w-full flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-black uppercase tracking-widest text-xs animate-pulse">
-            Establishing Neural Uplink...
-          </p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<GlobalLoading />}>
       <LobbyContent />
     </Suspense>
   );

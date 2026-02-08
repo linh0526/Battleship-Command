@@ -31,7 +31,7 @@ export default function PlacementGrid({
 }: PlacementGridProps) {
   const { t } = useLanguage();
   return (
-    <div className="glass-panel p-12 bg-[#1e293b]/20 border-slate-800 relative group overflow-hidden flex items-center justify-center min-h-[700px]">
+    <div className="relative group flex items-center justify-center w-full h-full py-8">
       {/* Grid Background Effect */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
            style={{ backgroundImage: 'radial-gradient(circle, #3b82f6 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
@@ -41,15 +41,21 @@ export default function PlacementGrid({
         animate={{ opacity: 1, scale: 1 }}
         className="relative p-4 sm:p-8 bg-slate-950 rounded-2xl border border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-[550px]"
       >
-        <div className="grid grid-cols-[30px_repeat(10,1fr)] gap-px bg-slate-800/30 p-px rounded-lg overflow-hidden select-none">
-          <div className="bg-slate-950/80 aspect-square"></div>
-          {['A','B','C','D','E','F','G','H','I','J'].map(l => (
-            <div key={l} className="flex items-center justify-center bg-slate-950/80 font-mono text-[10px] sm:text-xs font-black text-slate-600 border-l border-slate-900 aspect-square">{l}</div>
+        <div className="grid grid-cols-[30px_repeat(10,1fr)] gap-px bg-slate-800/40 border border-slate-800/50 rounded-lg overflow-hidden select-none">
+          {/* TOP LEFT CORNER */}
+          <div className="bg-slate-950 w-full h-full"></div>
+          
+          {/* LETTER LABELS */}
+          {['A','B','C','D','E','F','G','H','I','J'].map((l) => (
+            <div key={l} className="flex items-center justify-center bg-slate-950 font-mono text-xs font-black text-slate-500 aspect-square">{l}</div>
           ))}
 
           {Array.from({ length: 10 }).map((_, r) => (
             <React.Fragment key={r}>
-              <div className="flex items-center justify-center bg-slate-950/80 font-mono text-[10px] sm:text-xs font-black text-slate-600 border-t border-slate-900 aspect-square">{r + 1}</div>
+              {/* NUMBER LABELS */}
+              <div className="flex items-center justify-center bg-slate-950 font-mono text-xs font-black text-slate-500 w-full h-full">{r + 1}</div>
+              
+              {/* GRID CELLS */}
               {Array.from({ length: 10 }).map((_, c) => {
                 const status = getCellStatus(r, c);
                 
@@ -59,9 +65,9 @@ export default function PlacementGrid({
                     onClick={() => handleCellClick(r, c)}
                     onMouseEnter={() => setHoverPos({r, c})}
                     onMouseLeave={() => setHoverPos(null)}
-                    className={`cell aspect-square border-t border-l border-slate-900 relative group/cell transition-all cursor-crosshair
-                      ${status.type === 'preview' ? (status.valid ? `${status.color} opacity-80 shadow-[inset_0_0_15px_rgba(255,255,255,0.2)]` : 'bg-red-500/60 shadow-[inset_0_0_15px_rgba(239,68,68,0.3)]') : ''}
-                      ${status.type === 'ship' ? `${status.ship?.shipBgColor} border-white/10 shadow-[inset_0_0_15px_rgba(0,0,0,0.3)]` : 'hover:bg-white/20'}
+                    className={`cell aspect-square relative group/cell transition-all cursor-crosshair
+                      ${status.type === 'preview' ? (status.valid ? `${status.color} opacity-80 shadow-[inset_0_0_20px_rgba(255,255,255,0.2)]` : 'bg-red-500/60 shadow-[inset_0_0_20px_rgba(239,68,68,0.3)]') : 'bg-slate-950'}
+                      ${status.type === 'ship' ? `${status.ship?.shipBgColor} border-white/10 shadow-[inset_0_0_15px_rgba(0,0,0,0.3)]` : 'hover:bg-primary/10'}
                       after:absolute after:inset-0 after:border after:border-white/0 hover:after:border-white/40 after:transition-all after:pointer-events-none
                     `}
                   >

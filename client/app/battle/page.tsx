@@ -7,13 +7,15 @@ import { Suspense } from 'react';
 import { useGame, ShipInstance, GamePhase } from '@/context/GameContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSocket } from '@/context/SocketContext';
+import GlobalLoading from '@/components/layout/GlobalLoading';
 import { useSettings } from '@/context/SettingsContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import BattleGrid from '@/components/battle/BattleGrid';
 import BattleHeader from '@/components/battle/BattleHeader';
 import BattleModals from '@/components/battle/BattleModals';
 import FleetStatusPanel from '@/components/battle/FleetStatusPanel';
-import BattleLog from '@/components/battle/BattleLog';
+import BattleStatusPanel from '@/components/battle/BattleStatusPanel';
 import BattleFooter from '@/components/battle/BattleFooter';
 import { Shield } from 'lucide-react';
 
@@ -30,6 +32,9 @@ function BattleContent() {
   const { 
     gameState, addLog, setTurn, resetGame, prepareRematch, addScore, setRoomId, setGameStatus
   } = useGame();
+  const { 
+    battleLayout, enableSound, enableVibration, healthBarStyle
+  } = useSettings();
   
   const [showOpponentLeftModal, setShowOpponentLeftModal] = useState(false);
   const [showAbortModal, setShowAbortModal] = useState(false);
@@ -49,6 +54,13 @@ function BattleContent() {
   const [rematchRequested, setRematchRequested] = useState(false);
   const [opponentWantsRematch, setOpponentWantsRematch] = useState(false);
   const [aiShotNonce, setAiShotNonce] = useState(0);
+  const [impactEffect, setImpactEffect] = useState<'hit' | 'enemy-hit' | null>(null);
+
+  const triggerImpact = useCallback((type: 'hit' | 'enemy-hit') => {
+    if (!enableVibration) return;
+    setImpactEffect(type);
+    setTimeout(() => setImpactEffect(null), 500);
+  }, [enableVibration]);
 
   // Listen for opponent leaving
   useEffect(() => {
@@ -120,27 +132,23 @@ function BattleContent() {
     return () => clearInterval(interval);
   }, [gameState.currentTurn, turnTimer, gameResult]);
 
-  // Reset timer when turn changes
+  // Reset timer and show notification when turn changes
   useEffect(() => {
-    if (gameState.currentTurn) {
+    if (gameState.currentTurn && gameState.gameStatus === GamePhase.PLAYING) {
       setTurnTimer(30);
+      
+      // Only show turn notification for PvP
+      if (gameState.gameMode !== 'PvE') {
+        const timer = setTimeout(() => {
+          setShowTurnNotify(true);
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [gameState.currentTurn]);
+  }, [gameState.currentTurn, gameState.gameStatus, gameState.gameMode]);
 
   // Stats calculation
-  const totalPlayerShots = playerShots.size;
-  const playerHits = Array.from(playerShots.values()).filter(s => s === 'hit' || s === 'sunk').length;
-  const accuracy = totalPlayerShots > 0 ? Math.round((playerHits / totalPlayerShots) * 100) : 0;
 
-  const sunkEnemyShips = aiFleet.filter(ship => {
-    let shipHits = 0;
-    for (let i = 0; i < ship.size; i++) {
-        const sr = ship.orientation === 'horizontal' ? ship.row : ship.row + i;
-        const sc = ship.orientation === 'horizontal' ? ship.col + i : ship.col;
-        if (playerShots.get(`${sr}-${sc}`) === 'hit') shipHits++;
-    }
-    return shipHits === ship.size;
-  }).length;
 
   // Check for Game End
   useEffect(() => {
@@ -182,7 +190,7 @@ function BattleContent() {
   // Turn Notification Auto-hide logic
   useEffect(() => {
     if (showTurnNotify) {
-      const timer = setTimeout(() => setShowTurnNotify(false), 2500);
+      const timer = setTimeout(() => setShowTurnNotify(false), 3000);
       return () => clearTimeout(timer);
     }
   }, [showTurnNotify]);
@@ -190,7 +198,7 @@ function BattleContent() {
   // Handle Server-Authoritative Events
   useEffect(() => {
     if (socket && gameState.gameMode === 'PvP') {
-      const handleShotProcessed = (data: { attackerId: string, r: number, c: number, result: 'hit' | 'miss' | 'sunk', sunkShip?: any }) => {
+      const handleShotProcessed = (data: { attackerId: string, r: number, c: number, result: 'hit' | 'miss' | 'sunk', sunkShip?: ShipInstance }) => {
         const { attackerId, r, c, result, sunkShip } = data;
         const key = `${r}-${c}`;
         const isMyShot = attackerId === myClientId;
@@ -212,15 +220,18 @@ function BattleContent() {
             });
             
             if (result === 'hit' || result === 'sunk') {
-                 const audio = new Audio(result === 'sunk' ? '/sink.mp3' : '/shot-thaydan.mp3');
-                 audio.play().catch(() => {});
+                 if (enableSound) {
+                    const audio = new Audio(result === 'sunk' ? '/sink.mp3' : '/shot-thaydan.mp3');
+                    audio.play().catch(() => {});
+                 }
                  
                  if (result === 'sunk' && sunkShip) {
                      setRevealedEnemyShips(prev => [...prev, sunkShip]);
                      addLog({ msg: t('log_confirmed_kill'), result: t('log_target_neutralized'), type: 'hit' });
                  }
+                 triggerImpact('hit');
             } else {
-                 new Audio('/shot-miss.mp3').play().catch(() => {});
+                 if (enableSound) new Audio('/shot-miss.mp3').play().catch(() => {});
             }
 
         } else {
@@ -232,30 +243,36 @@ function BattleContent() {
             });
 
             if (result === 'hit' || result === 'sunk') {
-                 const audio = new Audio(result === 'sunk' ? '/sink.mp3' : '/shot-thaydan.mp3'); 
-                 audio.play().catch(() => {});
+                 if (enableSound) {
+                    const audio = new Audio(result === 'sunk' ? '/sink.mp3' : '/shot-thaydan.mp3'); 
+                    audio.play().catch(() => {});
+                 }
+                 
                  if (result === 'sunk') {
                      addLog({ msg: t('log_warning_sunk', { name: sunkShip?.name || t('opponent') }), result: t('log_critical_damage'), type: 'enemy-hit' });
                  }
+                 triggerImpact('enemy-hit');
             } else {
-                 new Audio('/shot-miss.mp3').play().catch(() => {});
+                 if (enableSound) new Audio('/shot-miss.mp3').play().catch(() => {});
             }
         }
       };
 
       const handleTurnChange = (data: { turn: string }) => {
-      setTurn(data.turn === myClientId ? 'player' : 'opponent');
-      setTurnTimer(30); // Reset timer on turn change
-      // Ensure we are in PLAYING phase
-      if (gameState.gameStatus !== GamePhase.PLAYING) setGameStatus(GamePhase.PLAYING);
-    };
+        setTimeout(() => {
+          setTurn(data.turn === myClientId ? 'player' : 'opponent');
+          setTurnTimer(30); // Reset timer on turn change
+          // Ensure we are in PLAYING phase
+          if (gameState.gameStatus !== GamePhase.PLAYING) setGameStatus(GamePhase.PLAYING);
+        }, 1500);
+      };
 
       const handleVictory = () => {
         if (gameResult) return;
         setGameResult('win');
         addScore('player', 1);
         addLog({ msg: t('log_victory'), result: t('log_mission_complete'), type: 'sys' });
-        new Audio('/victory.mp3').play().catch(() => {}); 
+        if (enableSound) new Audio('/victory.mp3').play().catch(() => {}); 
       };
 
       const handleDefeat = () => {
@@ -379,20 +396,57 @@ function BattleContent() {
     if (gameState.gameMode === 'PvE' && gameState.currentTurn === 'opponent' && !gameResult) {
       const timer = setTimeout(() => {
         handleAiTurn();
-      }, 1500);
+      }, 3888); // Reduced initial AI think time
       return () => clearTimeout(timer);
     }
   }, [gameState.currentTurn, gameState.gameMode, aiShotNonce, gameResult]);
 
   const handleAiTurn = () => {
-    let r, c, key;
-    do {
-      r = Math.floor(Math.random() * 10);
-      c = Math.floor(Math.random() * 10);
-      key = `${r}-${c}`;
-    } while (enemyShots.has(key));
+    // 1. Smart Targeting Logic
+    let r: number, c: number;
+    const potentialTargets: {r: number, c: number}[] = [];
+    
+    // Find all active hits (not sunk)
+    const activeHits: {r: number, c: number}[] = [];
+    enemyShots.forEach((val, k) => {
+      if (val === 'hit') {
+        const [hr, hc] = k.split('-').map(Number);
+        activeHits.push({r: hr, c: hc});
+      }
+    });
 
-    const isHit = gameState.playerFleet.some(s => {
+    if (activeHits.length > 0) {
+      // Seek neighbors
+      activeHits.forEach(hit => {
+         const neighbors = [
+           {r: hit.r-1, c: hit.c}, {r: hit.r+1, c: hit.c},
+           {r: hit.r, c: hit.c-1}, {r: hit.r, c: hit.c+1}
+         ];
+         neighbors.forEach(n => {
+           if (n.r >= 0 && n.r <= 9 && n.c >= 0 && n.c <= 9 && !enemyShots.has(`${n.r}-${n.c}`)) {
+             potentialTargets.push(n);
+           }
+         });
+      });
+    }
+
+    if (potentialTargets.length > 0) {
+       // Simple AI: Pick random neighbor of a hit
+       const target = potentialTargets[Math.floor(Math.random() * potentialTargets.length)];
+       r = target.r;
+       c = target.c;
+    } else {
+       // Random Hunt Mode
+        do {
+          r = Math.floor(Math.random() * 10);
+          c = Math.floor(Math.random() * 10);
+        } while (enemyShots.has(`${r}-${c}`));
+    }
+    
+    const key = `${r}-${c}`;
+
+    // 2. Check Hit
+    const hitShip = gameState.playerFleet.find(s => {
       for (let i = 0; i < s.size; i++) {
         const sr = s.orientation === 'horizontal' ? s.row : s.row + i;
         const sc = s.orientation === 'horizontal' ? s.col + i : s.col;
@@ -401,25 +455,53 @@ function BattleContent() {
       return false;
     });
 
-    const result: 'hit' | 'miss' = isHit ? 'hit' : 'miss';
+    const isHit = !!hitShip;
+    let result: 'hit' | 'miss' | 'sunk' = isHit ? 'hit' : 'miss';
     const newShots = new Map(enemyShots);
-    newShots.set(key, result);
+    
+    // 3. Handle Sunk Logic
+    if (isHit && hitShip) {
+        let hitsOnShip = 0;
+        const shipCells: {r: number, c: number}[] = [];
+        for (let i = 0; i < hitShip.size; i++) {
+           const sr = hitShip.orientation === 'horizontal' ? hitShip.row : hitShip.row + i;
+           const sc = hitShip.orientation === 'horizontal' ? hitShip.col + i : hitShip.col;
+           shipCells.push({r: sr, c: sc});
+           if ((sr === r && sc === c) || enemyShots.get(`${sr}-${sc}`) === 'hit') {
+              hitsOnShip++;
+           }
+        }
+        
+        if (hitsOnShip === hitShip.size) {
+            result = 'sunk';
+            shipCells.forEach(cell => {
+                newShots.set(`${cell.r}-${cell.c}`, 'sunk');
+            });
+        } else {
+            newShots.set(key, 'hit');
+        }
+    } else {
+        newShots.set(key, 'miss');
+    }
+
     setEnemyShots(newShots);
+
+    // Logs & Effects
     addLog({ 
       msg: t('log_enemy_fired', { pos: `${String.fromCharCode(65 + c)}${r + 1}` }), 
-      result: isHit ? t('log_direct_hit') : t('log_splash_miss'), 
+      result: result === 'sunk' ? t('log_warning_sunk', { name: hitShip?.name || 'Target' }) : isHit ? t('log_direct_hit') : t('log_splash_miss'), 
       type: isHit ? 'enemy-hit' : 'miss' 
     });
     
     if (!isHit) {
-      new Audio('/shot-miss.mp3').play().catch(() => {});
-      setTurn('player');
+      if (enableSound) new Audio('/shot-miss.mp3').play().catch(() => {});
+      setTimeout(() => setTurn('player'), 100); 
     } else {
-      new Audio('/shot-thaydan.mp3').play().catch(() => {});
-      // In PvE, if AI hits, it triggers another turn cycles via aiShotNonce
+      if (enableSound) new Audio('/shot-thaydan.mp3').play().catch(() => {});
+      triggerImpact('enemy-hit');
       setTimeout(() => {
         if (!gameResult) setAiShotNonce(prev => prev + 1);
-      }, 1500);
+      }, 100); 
     }
   };
 
@@ -432,7 +514,6 @@ function BattleContent() {
       // PvP: Send move to server
       emitMove(r, c);
       // Optimistically assume 'miss' or just wait? Better wait.
-      // But we can mark it as 'pending' if we had that state.
       // For now, let's just wait for feedback.
     } else {
       // PvE: Local logic
@@ -485,18 +566,45 @@ function BattleContent() {
       });
 
       if (!isHit) {
-        new Audio('/shot-miss.mp3').play().catch(() => {});
+        if (enableSound) new Audio('/shot-miss.mp3').play().catch(() => {});
         addLog({ msg: t('log_negative_impact'), result: t('log_switching_defense'), type: 'sys' });
         setTurn('opponent');
       } else {
-        const audio = new Audio(result === 'sunk' ? '/sink.mp3' : '/shot-thaydan.mp3');
-        audio.play().catch(() => {});
+        if (enableSound) {
+           const audio = new Audio(result === 'sunk' ? '/sink.mp3' : '/shot-thaydan.mp3');
+           audio.play().catch(() => {});
+        }
+        triggerImpact('hit');
         if (result === 'sunk') {
             addLog({ msg: t('log_confirmed_neutralized', { name: hitShip?.name }), result: t('log_target_destroyed'), type: 'hit' });
         }
       }
     }
   };
+
+  const totalPlayerShots = playerShots.size;
+  const playerHits = Array.from(playerShots.values()).filter(s => s === 'hit' || s === 'sunk').length;
+  const playerAccuracy = totalPlayerShots > 0 ? Math.round((playerHits / totalPlayerShots) * 100) : 0;
+
+  const totalEnemyShots = enemyShots.size;
+  const enemyHits = Array.from(enemyShots.values()).filter(s => s === 'hit' || s === 'sunk').length;
+  const enemyAccuracy = totalEnemyShots > 0 ? Math.round((enemyHits / totalEnemyShots) * 100) : 0;
+
+  const getSunkCount = (fleet: ShipInstance[], shots: Map<string, string>) => {
+    return fleet.filter(ship => {
+      let shipHits = 0;
+      for (let i = 0; i < ship.size; i++) {
+        const sr = ship.orientation === 'horizontal' ? ship.row : ship.row + i;
+        const sc = ship.orientation === 'horizontal' ? ship.col + i : ship.col;
+        const shot = shots.get(`${sr}-${sc}`);
+        if (shot === 'hit' || shot === 'sunk') shipHits++;
+      }
+      return shipHits === ship.size;
+    }).length;
+  };
+
+  const sunkEnemyShips = gameState.gameMode === 'PvE' ? getSunkCount(aiFleet, playerShots) : revealedEnemyShips.length;
+  const sunkPlayerShips = getSunkCount(gameState.playerFleet, enemyShots);
 
   const handleRematch = () => {
     if (gameState.gameMode === 'PvP') {
@@ -507,8 +615,11 @@ function BattleContent() {
             emitRematchRequest();
         }
     } else {
+        // PvE Rematch
         setRematchRequested(true);
         prepareRematch();
+        // Force PLACEMENT state for PvE to avoid triggering matchmaking logic
+        setGameStatus(GamePhase.PLACEMENT); 
         router.push('/placement');
     }
   };
@@ -521,8 +632,6 @@ function BattleContent() {
     resetGame();
     router.push('/');
   }, [gameState.gameMode, endPve, leaveRoom, resetGame, router]);
-
-  const { battleLayout } = useSettings();
 
   return (
     <div className="fixed inset-0 bg-[#060912] overflow-hidden flex items-center justify-center px-6 lg:px-10 py-0">
@@ -546,14 +655,34 @@ function BattleContent() {
         setShowAbortModal={setShowAbortModal}
         onConfirmAbort={handleExitToLobby}
         stats={{
-          totalShots: totalPlayerShots,
-          hits: playerHits,
-          misses: totalPlayerShots - playerHits,
-          accuracy: accuracy
+          player: {
+            totalShots: totalPlayerShots,
+            hits: playerHits,
+            accuracy: playerAccuracy,
+            sunkShips: sunkEnemyShips
+          },
+          opponent: {
+            totalShots: totalEnemyShots,
+            hits: enemyHits,
+            accuracy: enemyAccuracy,
+            sunkShips: sunkPlayerShips
+          }
         }}
       />
 
-      <div className="w-full h-full max-w-[1440px] flex flex-col gap-6 relative">
+      <motion.div 
+        animate={impactEffect === 'hit' ? {
+          scale: [1, 1.015, 1],
+          x: [0, -3, 3, -3, 3, 0],
+          y: [0, 3, -3, 3, -3, 0]
+        } : impactEffect === 'enemy-hit' ? {
+          scale: [1, 0.985, 1],
+          x: [0, 8, -8, 8, -8, 0],
+          y: [0, -8, 8, -8, 8, 0]
+        } : {}}
+        transition={{ duration: 0.4, ease: "easeInOut" }}
+        className="w-full h-full max-w-[1440px] flex flex-col gap-6 relative"
+      >
         <BattleHeader 
             currentTurn={gameState.currentTurn}
             scores={gameState.scores}
@@ -573,9 +702,11 @@ function BattleContent() {
             {/* LEFT: ENEMY DATA & TARGETING (DOMINANT) */}
             <section className="col-span-8 flex flex-col min-h-0 bg-slate-950/20 rounded-2xl border border-white/5 relative overflow-hidden">
               <div className="flex items-center justify-between p-4 border-b border-white/5 shrink-0 bg-slate-900/10">
-                  <div className="flex items-center gap-3">
-                    <Target className="w-4 h-4 text-error" />
-                    <span className="text-xs font-black text-white uppercase tracking-[0.3em]">{t('targeting_matrix')}</span>
+                   <div className="flex items-center gap-3">
+                    <Target className={`w-4 h-4 ${(gameState.currentTurn === 'player' || gameState.gameMode === 'PvE') ? 'text-error' : 'text-primary'}`} />
+                    <span className="text-xs font-black text-white uppercase tracking-[0.3em]">
+                      {(gameState.currentTurn === 'player' || gameState.gameMode === 'PvE') ? t('targeting_matrix') : (t('defensive_grid') || 'Defensive Grid')}
+                    </span>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 px-3 py-1 bg-slate-900/60 rounded border border-white/5">
@@ -589,9 +720,33 @@ function BattleContent() {
                  <div className="absolute inset-0 opacity-[0.05] pointer-events-none" 
                       style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #0ea5e9 0px, transparent 200px)', backgroundSize: '100% 100%' }}></div>
                  
-                 <div className="h-full aspect-square max-h-full">
-                   <BattleGrid type="enemy" fleet={aiFleet} revealedShips={revealedEnemyShips} shots={playerShots} onCellClick={handleEnemyCellClick} />
-                 </div>
+                 <div className="h-full aspect-square max-h-full overflow-hidden">
+                    <AnimatePresence mode="wait">
+                      {(gameState.currentTurn === 'player' || gameState.gameMode === 'PvE') ? (
+                        <motion.div
+                          key="grid-turn-player"
+                          initial={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
+                          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                          exit={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
+                          transition={{ duration: 0.5, delay: 0.3 }}
+                          className="w-full h-full"
+                        >
+                          <BattleGrid type="enemy" fleet={aiFleet} revealedShips={revealedEnemyShips} shots={playerShots} onCellClick={handleEnemyCellClick} />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="grid-turn-enemy"
+                          initial={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
+                          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                          exit={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
+                          transition={{ duration: 0.5, delay: 0.3 }}
+                          className="w-full h-full"
+                        >
+                          <BattleGrid type="player" fleet={gameState.playerFleet} shots={enemyShots} />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
 
                  <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-10">
                     <div className="w-[200%] h-1 bg-primary absolute top-0 left-[-50%] animate-[scan_5s_linear_infinite]"></div>
@@ -602,39 +757,66 @@ function BattleContent() {
             {/* RIGHT: DEFENSIVE & LOGISTICS */}
             <section className="col-span-4 flex flex-col gap-6 min-h-0">
                <FleetStatusPanel 
-                   playerFleet={gameState.playerFleet}
-                   enemyShots={enemyShots}
+                   playerFleet={(gameState.currentTurn === 'player' || gameState.gameMode === 'PvE') ? gameState.playerFleet : aiFleet}
+                   enemyShots={(gameState.currentTurn === 'player' || gameState.gameMode === 'PvE') ? enemyShots : playerShots}
+                   healthBarStyle={healthBarStyle}
+                   type={(gameState.currentTurn === 'player' || gameState.gameMode === 'PvE') ? 'player' : 'enemy'}
+                   revealedShips={(gameState.currentTurn === 'player' || gameState.gameMode === 'PvE') ? [] : revealedEnemyShips}
                />
-
-               <BattleLog logs={gameState.battleLogs} />
+               <BattleStatusPanel 
+                   playerFleet={gameState.playerFleet}
+                   enemyFleet={gameState.gameMode === 'PvE' ? aiFleet : [
+                     ...revealedEnemyShips,
+                     ...Array.from({ length: Math.max(0, 5 - revealedEnemyShips.length) }).map((_, i) => ({ id: `unknown-${i}`, name: 'Scanning...', size: 3, isUnknown: true }))
+                   ]}
+                   playerShots={playerShots}
+                   enemyShots={enemyShots}
+                   gameMode={gameState.gameMode}
+                   healthBarStyle={healthBarStyle}
+                   isCompact={true}
+               />
             </section>
           </div>
         ) : (
           /* PARALLEL LAYOUT */
-          <div className="flex-1 min-h-0 flex flex-col gap-6">
-            {/* TOP ROW: GRIDS */}
-            <div className="flex-[3] min-h-0 grid grid-cols-2 gap-8">
-              {/* LEFT: MY FLEET */}
-              <section className="flex flex-col min-h-0 bg-slate-950/20 rounded-2xl border border-white/5 relative overflow-hidden">
+          <div className="flex-1 min-h-0 grid grid-cols-2 gap-8">
+            {/* LEFT: MY FLEET (DEFENSE) */}
+            <div className="flex flex-col gap-6 min-h-0">
+              <section className="flex-1 flex flex-col min-h-0 bg-slate-950/20 rounded-2xl border border-white/5 relative overflow-hidden">
                 <div className="flex items-center justify-between p-3 border-b border-white/5 shrink-0 bg-slate-900/10">
                     <div className="flex items-center gap-3">
                       <Shield className="w-4 h-4 text-primary" />
-                      <span className="text-xs font-black text-white uppercase tracking-[0.3em]">{t('defensive_grid') || 'Defensive Grid'}</span>
-                    </div>
-                    <div className="px-2 py-0.5 rounded border border-emerald-500/20 bg-emerald-500/5">
-                      <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest leading-none">{t('fleet_active')}</span>
+                      <span className="text-xs font-black text-white uppercase tracking-[0.3em]">{t('defensive_grid')}</span>
                     </div>
                 </div>
 
                 <div className="flex-1 relative flex items-center justify-center p-4">
+                   <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+                        style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #0ea5e9 0px, transparent 200px)', backgroundSize: '100% 100%' }}></div>
+                   
                    <div className="h-full aspect-square max-h-full">
-                     <BattleGrid type="player" fleet={gameState.playerFleet} shots={enemyShots} />
+                      <BattleGrid type="player" fleet={gameState.playerFleet} shots={enemyShots} />
                    </div>
                 </div>
               </section>
+              
+              <div className="shrink-0">
+                <BattleStatusPanel 
+                    playerFleet={gameState.playerFleet}
+                    enemyFleet={[]}
+                    playerShots={playerShots}
+                    enemyShots={enemyShots}
+                    gameMode={gameState.gameMode}
+                    healthBarStyle={healthBarStyle}
+                    side="player"
+                    isCompact={true}
+                />
+              </div>
+            </div>
 
-              {/* RIGHT: ENEMY FLEET */}
-              <section className="flex flex-col min-h-0 bg-slate-950/20 rounded-2xl border border-error/5 relative overflow-hidden shadow-[inset_0_0_100px_rgba(239,68,68,0.02)]">
+            {/* RIGHT: ENEMY FLEET (OFFENSE) */}
+            <div className="flex flex-col gap-6 min-h-0">
+              <section className="flex-1 flex flex-col min-h-0 bg-slate-950/20 rounded-2xl border border-white/5 relative overflow-hidden">
                 <div className="flex items-center justify-between p-3 border-b border-white/5 shrink-0 bg-slate-900/10">
                     <div className="flex items-center gap-3">
                       <Target className="w-4 h-4 text-error" />
@@ -647,147 +829,44 @@ function BattleContent() {
                 </div>
 
                 <div className="flex-1 relative flex items-center justify-center p-4">
+                   <div className="absolute inset-0 opacity-[0.05] pointer-events-none" 
+                        style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #ef4444 0px, transparent 200px)', backgroundSize: '100% 100%' }}></div>
+                   
                    <div className="h-full aspect-square max-h-full">
-                     <BattleGrid type="enemy" fleet={aiFleet} revealedShips={revealedEnemyShips} shots={playerShots} onCellClick={handleEnemyCellClick} />
+                      <BattleGrid type="enemy" fleet={aiFleet} revealedShips={revealedEnemyShips} shots={playerShots} onCellClick={handleEnemyCellClick} />
                    </div>
                 </div>
               </section>
-            </div>
 
-            {/* BOTTOM ROW: STATUS & LOGS */}
-            <div className="flex-1 min-h-0 grid grid-cols-12 gap-6 h-[220px]">
-              {/* STATUS PANEL */}
-              <section className="col-span-4 bg-slate-950/40 rounded-xl border border-white/5 overflow-hidden flex flex-col min-h-0">
-                <div className="p-3 border-b border-white/5 bg-slate-900/20 flex items-center gap-2">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('battle_status')}</span>
-                </div>
-                <div className="flex-1 p-4 overflow-y-auto custom-scrollbar flex flex-col gap-6">
-                  {/* TWO COLUMNS FOR STATUS IN HORIZONTAL VIEW? NO, STACK THEM WITH GRID */}
-                  <div className="grid grid-cols-2 gap-4 min-w-0">
-                    {/* PLAYER VITAL SIGNS */}
-                    <div className="space-y-3 min-w-0">
-                      <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] px-1">{t('your_fleet_status')}</span>
-                      <div className="space-y-2">
-                        {gameState.playerFleet.map(ship => {
-                          const hitsOnShip = Array.from(enemyShots.entries()).filter(([key, res]) => {
-                            if (res !== 'hit') return false;
-                            const [r, c] = key.split('-').map(Number);
-                            for (let j = 0; j < ship.size; j++) {
-                              const sr = ship.orientation === 'horizontal' ? ship.row : ship.row + j;
-                              const sc = ship.orientation === 'horizontal' ? ship.col + j : ship.col;
-                              if (sr === r && sc === c) return true;
-                            }
-                            return false;
-                          }).length;
-                          const isSunk = hitsOnShip === ship.size;
-                          const health = ship.size - hitsOnShip;
-
-                          return (
-                            <div key={ship.id} className="flex flex-col gap-1">
-                              <div className="flex justify-between text-[8px] font-black uppercase gap-2">
-                                <span className={`truncate ${isSunk ? "text-slate-700" : (ship.shipTextColor || "text-slate-400")}`}>{ship.name}</span>
-                                <span className={`shrink-0 ${isSunk ? "text-slate-700" : "text-slate-300"}`}>{isSunk ? 'KO' : `${health}/${ship.size}`}</span>
-                              </div>
-                              <div className="flex gap-0.5">
-                                {Array.from({ length: ship.size }).map((_, idx) => (
-                                  <div 
-                                    key={idx} 
-                                    className={`h-1 flex-1 rounded-full transition-all duration-500 ${
-                                      idx < health 
-                                        ? `${ship.shipBgColor} shadow-[0_0_8px_currentColor] opacity-90` 
-                                        : 'bg-slate-800/80 border border-white/5'
-                                    }`} 
-                                    style={{ color: !isSunk && idx < health ? 'var(--primary)' : 'transparent' }} // Using color for currentColor if needed
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-
-                    {/* ENEMY VITAL SIGNS */}
-                    <div className="space-y-3 border-l border-white/5 pl-4 min-w-0">
-                      <span className="text-[10px] font-black text-red uppercase tracking-[0.2em] px-1">{t('enemy_fleet_status')}</span>
-                      <div className="space-y-2">
-                        {(gameState.gameMode === 'PvE' ? aiFleet : [
-                          ...revealedEnemyShips,
-                          ...Array(Math.max(0, 5 - revealedEnemyShips.length)).fill(null).map((_, i) => ({ id: `unknown-${i}`, name: 'Scanning...', size: 3, isUnknown: true }))
-                        ]).map((ship: any, i) => {
-                          if (ship.isUnknown) {
-                            return (
-                              <div key={ship.id} className="flex flex-col gap-0.5 opacity-20">
-                                <div className="flex justify-between text-[7px] font-black text-red/40 uppercase">
-                                  <span>Sector {i+1}</span>
-                                  <span>?/?</span>
-                                </div>
-                                <div className="h-1 w-full bg-slate-900/50 rounded-full" />
-                              </div>
-                            )
-                          }
-                          let hitsOnShip = 0;
-                          if (gameState.gameMode === 'PvP') hitsOnShip = ship.size;
-                          else {
-                            for (let j = 0; j < ship.size; j++) {
-                              const sr = ship.orientation === 'horizontal' ? ship.row : ship.row + j;
-                              const sc = ship.orientation === 'horizontal' ? ship.col + j : ship.col;
-                              if (playerShots.get(`${sr}-${sc}`) === 'hit' || playerShots.get(`${sr}-${sc}`) === 'sunk') hitsOnShip++;
-                            }
-                          }
-                          const isSunk = hitsOnShip === ship.size;
-                          const health = ship.size - hitsOnShip;
-
-                          return (
-                            <div key={ship.id} className="flex flex-col gap-1">
-                              <div className="flex justify-between text-[8px] font-black uppercase gap-2">
-                                <span className={`truncate ${isSunk ? "text-red/30" : "text-red/80"}`}>{ship.name}</span>
-                                <span className="text-red/40 shrink-0">{isSunk ? 'SUNK' : `${health}/${ship.size}`}</span>
-                              </div>
-                              <div className="flex gap-0.5">
-                                {Array.from({ length: ship.size }).map((_, idx) => (
-                                  <div key={idx} className={`h-1 flex-1 rounded-full border border-red/5 ${
-                                    idx < health 
-                                      ? 'bg-red/40 shadow-[0_0_5px_rgba(244,56,56,0.2)]' 
-                                      : 'bg-slate-900/60'
-                                  }`} />
-                                ))}
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* LOGS PANEL */}
-              <section className="col-span-8 flex flex-col min-h-0 bg-slate-950/40 rounded-xl border border-white/5 overflow-hidden">
-                <BattleLog logs={gameState.battleLogs} isCompact={true} />
-              </section>
+              <div className="shrink-0">
+                <BattleStatusPanel 
+                    playerFleet={[]}
+                    enemyFleet={gameState.gameMode === 'PvE' ? aiFleet : [
+                      ...revealedEnemyShips,
+                      ...Array.from({ length: Math.max(0, 5 - revealedEnemyShips.length) }).map((_, i) => ({ id: `unknown-${i}`, name: 'Scanning...', size: 3, isUnknown: true }))
+                    ]}
+                    playerShots={playerShots}
+                    enemyShots={enemyShots}
+                    gameMode={gameState.gameMode}
+                    healthBarStyle={healthBarStyle}
+                    side="enemy"
+                    isCompact={true}
+                />
+              </div>
             </div>
           </div>
         )}
 
-        <BattleFooter accuracy={accuracy} sunkEnemyShips={sunkEnemyShips} />
-      </div>
+        <BattleFooter accuracy={playerAccuracy} sunkEnemyShips={sunkEnemyShips} />
+      </motion.div>
     </div>
   );
 }
 
+
 export default function BattlePage() {
   return (
-    <Suspense fallback={
-      <div className="h-full w-full flex items-center justify-center bg-[#060912]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-black uppercase tracking-widest text-xs animate-pulse">
-            Neural Link Active - Reconnecting to Combat Sector...
-          </p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<GlobalLoading messageKey="reconnecting_op_zone" />}>
       <BattleContent />
     </Suspense>
   );

@@ -1,6 +1,4 @@
 "use client";
-
-import React from 'react';
 import { Globe, User, RefreshCw } from 'lucide-react';
 
 export type RoomStatus = 'WAITING' | 'PLACING' | 'BATTLE' | 'DANGER' | string;
@@ -19,7 +17,6 @@ interface ActiveOperationsProps {
   isConnected: boolean;
   onJoinRoom: (id: string) => void;
   t: (key: string, params?: Record<string, string>) => string;
-  ping?: number;
 }
 
 const ActiveOperations = ({
@@ -27,7 +24,6 @@ const ActiveOperations = ({
   isConnected,
   onJoinRoom,
   t,
-  ping
 }: ActiveOperationsProps) => {
   
   const statusLabelMap: Record<string, string> = {
@@ -38,7 +34,7 @@ const ActiveOperations = ({
   };
 
   return (
-    <section className="flex flex-col gap-6 w-full flex-1 min-h-0">
+    <section className="flex flex-col gap-6 w-full h-[500px] p-1">
       <div className="flex items-center justify-between shrink-0">
         <h2 className="text-lg font-black uppercase tracking-widest flex items-center gap-3 text-white">
           <Globe className="w-5 h-5 text-primary" />
@@ -46,10 +42,10 @@ const ActiveOperations = ({
         </h2>
         <div className="flex gap-2">
           <div className="bg-[#1e293b]/50 px-4 py-1.5 rounded-full border border-slate-800 text-xs font-bold text-slate-500 uppercase tracking-tighter">
-            Server: <span className={isConnected ? "text-emerald-400" : "text-error"}>{isConnected ? t('server_online') : t('server_offline')}</span>
+            Server: <span className={isConnected ? "text-emerald-400" : "text-red-500"}>{isConnected ? t('server_online') : t('server_offline')}</span>
           </div>
           <div className="bg-[#1e293b]/50 px-4 py-1.5 rounded-full border border-slate-800 text-xs font-bold text-slate-500 uppercase tracking-tighter">
-            Ping: <span className="text-emerald-400">{ping}ms</span>
+            Ping: <span className={isConnected ? "text-emerald-400" : "text-red-500"}>{isConnected ? `0ms` : `999ms`}</span> 
           </div>
         </div>
       </div>

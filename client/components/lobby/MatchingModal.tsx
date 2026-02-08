@@ -174,7 +174,7 @@ export default function MatchingModal({ isOpen, onClose }: MatchingModalProps) {
                   <div className="w-12 h-12 border-2 border-slate-800 border-t-primary rounded-full animate-spin"></div>
                   <div>
                     <p className="text-white text-xs font-black uppercase italic">{t('scanning_frequencies')}</p>
-                    <p className="text-slate-500 text-[9px] uppercase tracking-widest mt-1">{t('waiting_neural_link')}</p>
+                    <p className="text-slate-500 text-[9px] uppercase tracking-widest mt-1">{t('waiting_connection')}</p>
                   </div>
                 </div>
               )}

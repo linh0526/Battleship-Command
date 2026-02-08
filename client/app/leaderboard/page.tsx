@@ -2,8 +2,10 @@
 
 import { Trophy, Medal, TrendingUp, TrendingDown, Minus, User, Target, Shield, Zap, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function LeaderboardPage() {
+  const { t } = useLanguage();
   const commanders = [
     { rank: 1, name: 'AdmiralSarah', winRate: '84.2%', elo: 2840, trend: 'up', status: 'WAITING', statusColor: 'bg-amber-400', level: 'GEN', img: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' },
     { rank: 2, name: 'SeaWolf99', winRate: '79.8%', elo: 2735, trend: 'up', status: 'IN MATCH', statusColor: 'bg-blue-400', level: 'ADM', img: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Wolf' },
@@ -20,9 +22,9 @@ export default function LeaderboardPage() {
         <motion.h1 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="text-5xl font-black tracking-tight mb-2 text-white"
+          className="text-5xl font-black tracking-tight mb-2 text-white py-2 uppercase italic"
         >
-          HALL OF <span className="text-warning">VALOR</span>
+          {t('hall_of_valor')}
         </motion.h1>
         <p className="text-slate-500 font-medium mb-10">Real-time ranking of Global Fleet Commanders across active combat zones.</p>
 

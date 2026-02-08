@@ -110,20 +110,21 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       try {
         const parsed = JSON.parse(saved);
         // Chỉ khôi phục các thông tin cần thiết, reset trạng thái phòng/trận
-        setGameState(prev => ({ 
-          ...prev, 
-          playerName: parsed.playerName || '',
-          scores: parsed.scores || { player: 0, opponent: 0 },
-          playerFleet: parsed.playerFleet || [],
-          // Đảm bảo không tự động rơi vào trạng thái đang chơi/đang tìm
-          roomId: null,
-          gameStatus: GamePhase.IDLE,
-          isFleetReady: false,
-          isRoomReady: false,
-          isOpponentRoomReady: false,
-          opponent: null,
-          battleLogs: []
-        }));
+          setGameState(prev => ({ 
+            ...prev, 
+            playerName: parsed.playerName || '',
+            scores: parsed.scores || { player: 0, opponent: 0 },
+            playerFleet: parsed.playerFleet || [],
+            gameMode: parsed.gameMode || 'PvP',
+            isPlayingPvE: parsed.isPlayingPvE || false,
+            roomId: parsed.roomId || null,
+            gameStatus: parsed.gameStatus || GamePhase.IDLE,
+            isFleetReady: false,
+            isRoomReady: false,
+            isOpponentRoomReady: false,
+            opponent: null,
+            battleLogs: []
+          }));
       } catch (e) {
         console.error("Failed to parse saved state", e);
       }
@@ -138,7 +139,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       const stateToSave = {
         playerName: gameState.playerName,
         scores: gameState.scores,
-        playerFleet: gameState.playerFleet
+        playerFleet: gameState.playerFleet,
+        gameMode: gameState.gameMode,
+        isPlayingPvE: gameState.isPlayingPvE,
+        roomId: gameState.roomId,
+        gameStatus: gameState.gameStatus
       };
       localStorage.setItem('battleship_state', JSON.stringify(stateToSave));
     }

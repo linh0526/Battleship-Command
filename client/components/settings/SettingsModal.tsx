@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Layout, Monitor, Volume2, Shield, Zap, Info, Palette, Grid, Radio, Map, Waves, Hexagon, Crosshair, Signal } from 'lucide-react';
+import { X, Layout, Monitor, Volume2, Shield, Zap, Info, Palette, Grid, Radio, Map, Waves, Hexagon, Crosshair, Signal, Languages, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSettings, BattleLayout, BackgroundMode } from '@/context/SettingsContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -12,9 +12,12 @@ interface SettingsModalProps {
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { 
     battleLayout, setBattleLayout,
-    backgroundMode, setBackgroundMode
+    backgroundMode, setBackgroundMode,
+    enableSound, setEnableSound,
+    enableVibration, setEnableVibration,
+    healthBarStyle, setHealthBarStyle
   } = useSettings();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
 
   const layoutOptions: { id: BattleLayout; label: string; desc: string; icon: any }[] = [
     { 
@@ -64,7 +67,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   const suggestions = [
     { title: 'Custom Themes', desc: 'Ability to change UI accents and board colors.', icon: Zap },
-    { title: 'Sound Effects', desc: 'Volume controls for hits, misses, and ambient radar.', icon: Volume2 },
+    { title: 'Weather Systems', desc: 'Dynamic fog, rain, and storms affecting visibility.', icon: Waves },
     { title: 'Advanced Radar', desc: 'Thermal imaging and sonobuoy deployment visualizations.', icon: Shield },
   ];
 
@@ -93,7 +96,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   <Layout className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-white uppercase tracking-tight">{t('settings') || 'Command Settings'}</h2>
+                  <h2 className="text-xl font-black text-white uppercase tracking-tight py-1">{t('settings') || 'Command Settings'}</h2>
                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t('settings_subtitle') || 'Configure Battle Interface'}</p>
                 </div>
               </div>
@@ -107,6 +110,54 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+              {/* Language Selection */}
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <Languages className="w-4 h-4 text-primary" />
+                  <h3 className="text-sm font-black text-white uppercase tracking-widest">{t('settings_language') || 'Language'}</h3>
+                </div>
+                
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => setLanguage('en')}
+                    className={`flex-1 flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
+                        language === 'en' 
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary/20' 
+                        : 'border-white/5 bg-white/2 hover:border-white/10 hover:bg-white/5'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                        <span className={`text-xl font-bold ${language === 'en' ? 'text-white' : 'text-slate-500'}`}>EN</span>
+                        <span className={`font-black uppercase tracking-tight ${language === 'en' ? 'text-white' : 'text-slate-300'}`}>English</span>
+                    </div>
+                    {language === 'en' && (
+                        <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-white" />
+                        </div>
+                    )}
+                  </button>
+
+                  <button 
+                    onClick={() => setLanguage('vi')}
+                    className={`flex-1 flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
+                        language === 'vi' 
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary/20' 
+                        : 'border-white/5 bg-white/2 hover:border-white/10 hover:bg-white/5'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                        <span className={`text-xl font-bold ${language === 'vi' ? 'text-white' : 'text-slate-500'}`}>VI</span>
+                        <span className={`font-black uppercase tracking-tight ${language === 'vi' ? 'text-white' : 'text-slate-300'}`}>Tiếng Việt</span>
+                    </div>
+                    {language === 'vi' && (
+                        <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-white" />
+                        </div>
+                    )}
+                  </button>
+                </div>
+              </section>
+
               {/* Layout Selection */}
               <section>
                 <div className="flex items-center gap-2 mb-4">
@@ -144,6 +195,53 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     </button>
                   ))}
                 </div>
+              </section>
+
+              {/* Health Bar Style Selection */}
+              <section className="pt-4 border-t border-white/5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Shield className="w-4 h-4 text-primary" />
+                  <h3 className="text-sm font-black text-white uppercase tracking-widest">{t('settings_health_bar') || 'Health Bar Style'}</h3>
+                </div>
+                
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => setHealthBarStyle('modern')}
+                    className={`flex-1 flex flex-col p-4 rounded-xl border-2 transition-all ${
+                        healthBarStyle === 'modern' 
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary/20' 
+                        : 'border-white/5 bg-white/2 hover:border-white/10 hover:bg-white/5'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                       <span className={`text-xs font-black uppercase tracking-widest ${healthBarStyle === 'modern' ? 'text-white' : 'text-slate-400'}`}>{t('health_modern')}</span>
+                       {healthBarStyle === 'modern' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div className="flex gap-1">
+                       <div className="h-1.5 flex-1 bg-primary rounded-full shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
+                       <div className="h-1.5 flex-1 bg-primary rounded-full shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
+                       <div className="h-1.5 flex-1 bg-slate-800 rounded-full" />
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick={() => setHealthBarStyle('minimalist')}
+                    className={`flex-1 flex flex-col p-4 rounded-xl border-2 transition-all ${
+                        healthBarStyle === 'minimalist' 
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary/20' 
+                        : 'border-white/5 bg-white/2 hover:border-white/10 hover:bg-white/5'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                       <span className={`text-xs font-black uppercase tracking-widest ${healthBarStyle === 'minimalist' ? 'text-white' : 'text-slate-400'}`}>{t('health_minimalist')}</span>
+                       {healthBarStyle === 'minimalist' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                       <div className="h-full w-2/3 bg-primary" />
+                    </div>
+                  </button>
+                </div>
+                <p className="mt-2 text-[10px] text-slate-500 font-bold uppercase tracking-tight">{t('settings_health_bar_desc')}</p>
               </section>
 
               {/* Background Selection */}
@@ -189,6 +287,60 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </div>
               </section>
 
+              {/* Audio & Feedback Settings */}
+              <section className="pt-4 border-t border-white/5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Volume2 className="w-4 h-4 text-primary" />
+                  <h3 className="text-sm font-black text-white uppercase tracking-widest">{t('settings_audio_feedback') || 'Audio & Feedback'}</h3>
+                </div>
+
+                <div className="space-y-3">
+                   {/* Sound Toggle */}
+                   <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/40 border border-white/5 hover:border-white/10 transition-colors">
+                      <div className="flex items-center gap-4">
+                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${enableSound ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-800 text-slate-500'}`}>
+                            <Volume2 className="w-5 h-5" />
+                         </div>
+                         <div>
+                            <h4 className="text-xs font-black text-slate-300 uppercase tracking-wide">{t('settings_sound')}</h4>
+                            <p className="text-[10px] text-slate-500 uppercase tracking-tight font-bold">{t('settings_sound_desc')}</p>
+                         </div>
+                      </div>
+                      <button 
+                        onClick={() => setEnableSound(!enableSound)}
+                        className={`w-12 h-6 rounded-full relative transition-colors duration-300 pointer-events-auto ${enableSound ? 'bg-primary' : 'bg-slate-800'}`}
+                      >
+                        <motion.div 
+                          animate={{ x: enableSound ? 24 : 4 }}
+                          className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-lg"
+                        />
+                      </button>
+                   </div>
+
+                   {/* Vibration Toggle */}
+                   <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/40 border border-white/5 hover:border-white/10 transition-colors">
+                      <div className="flex items-center gap-4">
+                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${enableVibration ? 'bg-amber-500/10 text-amber-500' : 'bg-slate-800 text-slate-500'}`}>
+                            <Radio className="w-5 h-5" />
+                         </div>
+                         <div>
+                            <h4 className="text-xs font-black text-slate-300 uppercase tracking-wide">{t('settings_vibration')}</h4>
+                            <p className="text-[10px] text-slate-500 uppercase tracking-tight font-bold">{t('settings_vibration_desc')}</p>
+                         </div>
+                      </div>
+                      <button 
+                        onClick={() => setEnableVibration(!enableVibration)}
+                        className={`w-12 h-6 rounded-full relative transition-colors duration-300 pointer-events-auto ${enableVibration ? 'bg-primary' : 'bg-slate-800'}`}
+                      >
+                        <motion.div 
+                          animate={{ x: enableVibration ? 24 : 4 }}
+                          className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-lg"
+                        />
+                      </button>
+                   </div>
+                </div>
+              </section>
+
               {/* Development Suggestions */}
               <section className="pt-4 border-t border-white/5">
                 <div className="flex items-center gap-2 mb-4">
@@ -210,6 +362,35 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       </div>
                     </div>
                   ))}
+                </div>
+              </section>
+
+              {/* Feedback Section */}
+              <section className="pt-4 border-t border-white/5">
+                <div className="flex items-center gap-2 mb-4">
+                   <MessageSquare className="w-4 h-4 text-blue-400" />
+                   <h3 className="text-sm font-black text-white uppercase tracking-widest">{t('settings_feedback') || 'Feedback'}</h3>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-900/40 border border-white/5">
+                   <p className="text-[11px] text-slate-400 mb-3">{t('settings_feedback_desc') || 'Send your reports and suggestions directly to Command.'}</p>
+                   <textarea 
+                      className="w-full bg-slate-950/50 border border-white/10 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-primary/50 transition-colors min-h-[80px]"
+                      placeholder={t('settings_feedback_placeholder') || 'Enter your message...'}
+                   />
+                   <div className="flex justify-end mt-3">
+                      <button 
+                         onClick={(e) => {
+                             const textarea = (e.target as HTMLElement).parentElement?.querySelector('textarea');
+                             if (textarea && textarea.value.trim()) {
+                                 alert(`Feedback sent to SYSTEM (linh@gmail.com):\n\n${textarea.value}`);
+                                 textarea.value = '';
+                             }
+                         }}
+                         className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all"
+                      >
+                         {t('send_feedback') || 'Send Report'}
+                      </button>
+                   </div>
                 </div>
               </section>
             </div>

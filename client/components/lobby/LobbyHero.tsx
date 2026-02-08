@@ -9,21 +9,20 @@ interface LobbyHeroProps {
   onStartPvE: () => void;
   onCreateRoom: () => void;
   t: (key: string, params?: Record<string, string>) => string;
-  ping?: number;
 }
 
-export default function LobbyHero({
+export default function LobbyHero({     
   onStartPvP,
   onStartPvE,
   onCreateRoom,
   t
 }: LobbyHeroProps) {
   return (
-    <section className="shrink-0">
+    <section className="shrink-0 p-1">
       <motion.h1 
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        className="text-5xl font-black tracking-tight mb-2 text-white italic uppercase"
+        className="text-4xl md:text-6xl font-black tracking-tight mb-2 text-white italic uppercase py-2"
       >
         {t('team_lobby')}
       </motion.h1>
@@ -44,7 +43,6 @@ export default function LobbyHero({
             </div>
             <div className="text-left">
               <p className="text-3xl font-black uppercase tracking-tighter text-white italic">{t('team_lobby_btn')}</p>
-              <p className="text-[10px] uppercase font-bold text-white/50 tracking-[0.2em]">{t('multiplayer_desc')}</p>
             </div>
           </div>
         </button>
