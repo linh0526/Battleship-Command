@@ -91,12 +91,12 @@ export default function BattleModals({
       if (showOpponentLeftModal) return;
 
       if (showTurnNotify) setShowTurnNotify(false);
-      if (gameStatus === GamePhase.MATCHMAKING) onCancelSearch();
+      if (gameStatus === GamePhase.WAITING) onCancelSearch();
       if (showAbortModal) setShowAbortModal(false);
       if (gameResult) onReturnToBase();
     };
     
-    const isAnyVisible = showTurnNotify || gameStatus === GamePhase.MATCHMAKING || showOpponentLeftModal || showAbortModal || gameResult;
+    const isAnyVisible = showTurnNotify || gameStatus === GamePhase.WAITING || showOpponentLeftModal || showAbortModal || gameResult;
     
     if (isAnyVisible) {
       window.addEventListener('keydown', handleEsc);
@@ -150,7 +150,7 @@ export default function BattleModals({
       )}
 
       {/* WAITING FOR OPPONENT OVERLAY */}
-      {gameStatus === GamePhase.MATCHMAKING && (
+      {gameStatus === GamePhase.WAITING && (
         <motion.div 
           variants={overlayVariants}
           initial="hidden"

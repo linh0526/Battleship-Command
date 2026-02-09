@@ -35,7 +35,7 @@ export function PlacementContent() {
     setRoomId, setTurn, setGameMode, resetGame, 
     setOpponent, setOpponentFleetReady, resetScores 
   } = useGame();
-  const { socket, joinRandomRoom, isConnected, emitFleetReady, leaveMatchmaking, leaveRoom, endPve, startPve, createRoom, joinSpecificRoom, emitUnready } = useSocket();
+  const { socket, joinRandomRoom, isConnected, emitFleetReady, leaveRoom, endPve, startPve, createRoom, joinSpecificRoom, emitUnready } = useSocket();
   const [showOpponentLeftModal, setShowOpponentLeftModal] = useState(false);
   const [showAbortModal, setShowAbortModal] = useState(false);
   const isTransitioningRef = useRef(false);
@@ -53,8 +53,8 @@ export function PlacementContent() {
 
   // Ensure we are in PLACEMENT phase
   useEffect(() => {
-    if (gameState.gameStatus !== GamePhase.PLACEMENT && gameState.gameStatus !== GamePhase.PLAYING) {
-        setGameStatus(GamePhase.PLACEMENT);
+    if (gameState.gameStatus !== GamePhase.PLACING && gameState.gameStatus !== GamePhase.PLAYING) {
+        setGameStatus(GamePhase.PLACING);
     }
   }, []);
 
@@ -79,11 +79,11 @@ export function PlacementContent() {
     if (socket) {
       const handleMatchStart = () => {
         // Clear waiting overlay, back to placement mode
-        setGameStatus(GamePhase.PLACEMENT);
+        setGameStatus(GamePhase.PLACING);
       };
 
       const handleRoomJoined = () => {
-        if (gameState.gameStatus === GamePhase.MATCHMAKING) {
+        if (gameState.gameStatus === GamePhase.WAITING) {
           socket.emit('player_room_ready', { ready: true });
         }
       };
@@ -118,7 +118,6 @@ export function PlacementContent() {
   const [selectedShipIndex, setSelectedShipIndex] = useState<number | null>(null);
   const [selectedOrientation, setSelectedOrientation] = useState<Orientation>('horizontal');
   const [hoverPos, setHoverPos] = useState<{r: number, c: number} | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
   const [activeRooms, setActiveRooms] = useState<{id: string; status: string; [key: string]: any}[]>([]);
 
   const [isReady, setIsReady] = useState(false);
@@ -131,12 +130,7 @@ export function PlacementContent() {
       }
   }, [placedShips, gameState.isFleetReady]);
 
-  // Reset searching state when room is joined
-  useEffect(() => {
-    if (gameState.roomId) {
-      setIsSearching(false);
-    }
-  }, [gameState.roomId]);
+
 
   // Listen for rooms update to show live feed while searching
   useEffect(() => {
@@ -214,7 +208,7 @@ export function PlacementContent() {
 
   const handleCellClick = (r: number, c: number) => {
     // Prevent edits if locked or searching
-    if (isReady || isSearching || gameState.isFleetReady) return;
+    if (isReady || gameState.isFleetReady) return;
 
     // If a ship is selected from manifest, try to place it
     if (selectedShipIndex !== null) {
@@ -306,7 +300,7 @@ export function PlacementContent() {
              // router.push('/battle'); // Removed for unified URL handling
         } else {
             // PvP Mode
-            setIsSearching(true);
+
              // join room waiting or create room if no waiting room
              const waitingRoom = activeRooms.find(r => 
                  (r.status === 'waiting' || r.status === 'WAITING' || r.status === t('room_waiting')) && 
@@ -465,7 +459,6 @@ export function PlacementContent() {
                     handleCellClick={handleCellClick}
                     setHoverPos={setHoverPos}
                     getCellStatus={getCellStatus}
-                    isSearching={isSearching}
                     activeRooms={activeRooms}
                     socketId={socket?.id}
                     isReady={isReady} 
@@ -490,7 +483,6 @@ export function PlacementContent() {
 
             <PlacementAction 
                 isFleetComplete={isFleetComplete}
-                isSearching={isSearching}
                 gameState={gameState}
                 handleAction={handleAction}
                 isReady={isReady}

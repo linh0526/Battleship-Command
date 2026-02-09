@@ -1,10 +1,17 @@
-const { rooms } = require('../state');
+const { rooms, activePve } = require('../state');
 const { startGame } = require('../gameEngine');
 const { GamePhase } = require('../constants');
 
 module.exports = (io, socket) => {
     const findRoom = () => {
+        // Check PvP rooms
         for (const [id, rm] of rooms.entries()) {
+            if (rm.players.some(p => p.clientId === socket.clientId)) {
+                return { roomId: id, room: rm };
+            }
+        }
+        // Check PvE rooms
+        for (const [id, rm] of activePve.entries()) {
             if (rm.players.some(p => p.clientId === socket.clientId)) {
                 return { roomId: id, room: rm };
             }
@@ -16,7 +23,7 @@ module.exports = (io, socket) => {
         const { r, c } = data;
         const { roomId, room } = findRoom();
 
-        if (roomId && room && room.phase === GamePhase.BATTLE) {
+        if (roomId && room && room.phase === GamePhase.PLAYING) {
             if (room.turn !== socket.clientId) return;
 
             const friendlyCoord = `${String.fromCharCode(65 + c)}${r + 1}`;
@@ -147,7 +154,7 @@ module.exports = (io, socket) => {
     socket.on('rematch_accept', () => {
         const { roomId, room } = findRoom();
         if (roomId && room) {
-            room.phase = GamePhase.LOBBY;
+            room.phase = GamePhase.WAITING;
             room.turn = null;
             room.players.forEach(p => {
                 p.ready = false;
@@ -161,7 +168,7 @@ module.exports = (io, socket) => {
     socket.on('player_room_ready', (data) => {
         const { ready } = data;
         const { roomId, room } = findRoom();
-        if (room && room.phase === GamePhase.LOBBY) {
+        if (room && room.phase === GamePhase.WAITING) {
             const player = room.players.find(p => p.clientId === socket.clientId);
             if (player) {
                 player.roomReady = ready;
@@ -172,7 +179,7 @@ module.exports = (io, socket) => {
 
     socket.on('room_start_match', () => {
         const { roomId, room } = findRoom();
-        if (room && room.phase === GamePhase.LOBBY && room.players.length === 2 && room.players.every(p => p.roomReady)) {
+        if (room && room.phase === GamePhase.WAITING && room.players.length === 2 && room.players.every(p => p.roomReady)) {
             room.phase = GamePhase.PLACING;
             console.log(`[LOBBY] ${socket.playerName} started match in ${roomId}`);
             io.to(roomId).emit('match_start_init');

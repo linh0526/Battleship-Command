@@ -1,4 +1,4 @@
-const { rooms, waitingPlayers } = require('../state');
+const { rooms } = require('../state');
 const { getRoomsList } = require('../utils');
 const { GamePhase } = require('../constants');
 const { createPlayer, createRoom } = require('../factories');
@@ -7,19 +7,20 @@ const connectionHandler = require('./connectionHandler');
 module.exports = (io, socket) => {
     const handlePlayerLeave = connectionHandler.handlePlayerLeave;
 
-    const cleanupWaiting = () => {
-        const index = waitingPlayers.findIndex(p => p.socketId === socket.id);
-        if (index !== -1) waitingPlayers.splice(index, 1);
-    };
-
+    /**
+     * CREATE ROOM - Tạo room mới (Open Room Model)
+     * Khi player bấm "Tìm trận" hoặc "Tạo phòng"
+     */
     socket.on('create_room', (data) => {
         const playerName = data?.name || 'Commander';
+        const userId = data?.userId || null; // For authenticated users
         const mode = data?.mode || 'classic';
         socket.playerName = playerName;
         
+        // Cleanup: Leave any existing room
         handlePlayerLeave(io, socket, 'left');
-        cleanupWaiting();
 
+        // Generate unique room ID
         let roomId;
         do {
             roomId = Math.floor(1000 + Math.random() * 9000).toString();
@@ -31,80 +32,112 @@ module.exports = (io, socket) => {
         const player = createPlayer({ 
             clientId: socket.clientId, 
             socketId: socket.id, 
+            userId,
             name: playerName 
         });
 
         const room = createRoom({ roomId, players: [player], mode });
         rooms.set(roomId, room);
 
-        socket.emit('room_joined', { roomId, mode });
+        socket.emit('room_joined', { roomId, mode, opponent: null });
         io.emit('rooms_update', getRoomsList());
     });
 
+    /**
+     * JOIN RANDOM - Tìm room WAITING bất kỳ và join
+     */
     socket.on('join_random', (data) => {
         const playerName = data?.name || 'Commander';
+        const userId = data?.userId || null;
         const mode = data?.mode || 'classic';
         socket.playerName = playerName;
         
         handlePlayerLeave(io, socket, 'left');
-        cleanupWaiting();
 
-        if (waitingPlayers.length > 0) {
-            const oppData = waitingPlayers.shift();
-            const roomId = Math.floor(1000 + Math.random() * 9000).toString();
+        // Tìm room WAITING (1/2 players)
+        let targetRoom = null;
+        let targetRoomId = null;
 
-            const p1 = createPlayer({ clientId: socket.clientId, socketId: socket.id, name: socket.playerName });
-            const p2 = createPlayer({ clientId: oppData.clientId, socketId: oppData.socketId, name: oppData.name });
+        for (const [roomId, room] of rooms.entries()) {
+            const activePlayers = room.players.filter(p => p.status !== 'disconnected');
+            
+            if (
+                room.phase === GamePhase.WAITING &&
+                activePlayers.length < 2 &&
+                room.mode === mode &&
+                !room.isPvE
+            ) {
+                targetRoom = room;
+                targetRoomId = roomId;
+                break;
+            }
+        }
 
-            const room = createRoom({ roomId, players: [p1, p2], mode });
-            rooms.set(roomId, room);
+        // Nếu tìm thấy room -> Join
+        if (targetRoom) {
+            socket.join(targetRoomId);
+            
+            const host = targetRoom.players[0];
+            const guest = createPlayer({ 
+                clientId: socket.clientId, 
+                socketId: socket.id, 
+                userId,
+                name: playerName 
+            });
+            targetRoom.players.push(guest);
 
-            socket.join(roomId);
-            const opponentSocket = io.sockets.sockets.get(oppData.socketId);
-            if (opponentSocket) opponentSocket.join(roomId);
+            // Reset ready states
+            targetRoom.players.forEach(p => {
+                p.ready = false;
+                p.roomReady = false;
+            });
 
-            const oppInfo = { name: p2.name, fleetReady: false, status: 'connected' };
-            const selfInfo = { name: p1.name, fleetReady: false, status: 'connected' };
+            const hostInfo = { name: host.name, fleetReady: false, roomReady: false, status: host.status };
+            const guestInfo = { name: playerName, fleetReady: false, roomReady: false, status: 'connected' };
 
-            io.to(socket.id).emit('room_joined', { roomId, opponent: oppInfo, mode });
-            io.to(oppData.socketId).emit('room_joined', { roomId, opponent: selfInfo, mode });
-            io.to(oppData.socketId).emit('opponent_joined', selfInfo);
+            socket.emit('room_joined', { roomId: targetRoomId, opponent: hostInfo, mode: targetRoom.mode });
+            io.to(host.socketId).emit('opponent_joined', guestInfo);
             
             io.emit('rooms_update', getRoomsList());
+            console.log(`[ROOM] ${playerName} joined ${targetRoomId} (Random)`);
         } else {
-            waitingPlayers.push({
-                socketId: socket.id,
-                clientId: socket.clientId,
-                name: playerName,
-                waitingMode: mode
-            });
-            socket.emit('waiting_for_opponent');
-            io.emit('rooms_update', getRoomsList());
+            // Không tìm thấy room -> Tạo room mới
+            socket.emit('create_room', { name: playerName, userId, mode });
         }
     });
 
+    /**
+     * JOIN SPECIFIC - Join room cụ thể hoặc reconnect
+     */
     socket.on('join_specific', (data) => {
         const playerName = data?.name || 'Commander';
+        const userId = data?.userId || null;
         const targetId = data?.targetId;
         const clientId = socket.clientId;
         socket.playerName = playerName;
 
-        if (!targetId) return;
+        if (!targetId) {
+            socket.emit('error', { msg: 'Room ID không hợp lệ' });
+            return;
+        }
 
-        // Check if already in target room (reconnection)
+        // RECONNECT: Check if player is already in this room
         if (rooms.has(targetId)) {
             const room = rooms.get(targetId);
-            const isParticipant = room.players.some(p => p.clientId === clientId);
+            const existingPlayer = room.players.find(p => p.clientId === clientId);
 
-            if (isParticipant) {
-                const player = room.players.find(p => p.clientId === clientId);
-                player.socketId = socket.id;
-                player.status = 'connected';
-                if (player.disconnectTimer) {
-                    clearTimeout(player.disconnectTimer);
-                    player.disconnectTimer = null;
+            if (existingPlayer) {
+                // RECONNECTION FLOW
+                existingPlayer.socketId = socket.id;
+                existingPlayer.status = 'connected';
+                
+                if (existingPlayer.disconnectTimer) {
+                    clearTimeout(existingPlayer.disconnectTimer);
+                    existingPlayer.disconnectTimer = null;
                 }
+                
                 socket.join(targetId);
+                
                 const opponent = room.players.find(p => p.clientId !== clientId);
                 socket.emit('room_joined', { 
                     roomId: targetId, 
@@ -117,6 +150,7 @@ module.exports = (io, socket) => {
                     mode: room.mode
                 });
 
+                // Restore game state
                 if (room.turn) {
                     socket.emit('game_start', { firstTurn: room.turn === clientId ? 'player' : 'opponent' });
                 } else if (room.phase === GamePhase.PLACING) {
@@ -124,86 +158,72 @@ module.exports = (io, socket) => {
                 }
 
                 socket.to(targetId).emit('opponent_status_update', { status: 'connected' });
+                console.log(`[RECONNECT] ${playerName} reconnected to ${targetId}`);
                 return;
             }
         }
 
-        // If not reconnecting to SAME room, leave any other rooms first
+        // NEW JOIN: Leave any existing room first
         handlePlayerLeave(io, socket, 'left');
-        cleanupWaiting();
 
-        // Case 1: Target is an existing ROOM (New Joiner)
-        if (rooms.has(targetId)) {
-            const room = rooms.get(targetId);
-
-            if (room.players.length >= 2) {
-                socket.emit('error', { msg: 'Phòng đã đầy hoặc trận đấu đang diễn ra!' });
-                return;
-            }
-
-            socket.join(targetId);
-            const host = room.players[0];
-            const guest = createPlayer({ clientId, socketId: socket.id, name: playerName });
-            room.players.push(guest);
-
-            // Reset everybody for the fresh lobby
-            room.players.forEach(p => {
-                p.ready = false;
-                p.roomReady = false;
-            });
-
-            socket.emit('room_joined', { 
-                roomId: targetId, 
-                opponent: { name: host.name, fleetReady: false, roomReady: false, status: host.status }, 
-                mode: room.mode 
-            });
-            io.to(host.socketId).emit('opponent_joined', { 
-                name: playerName, 
-                fleetReady: false, 
-                roomReady: false, 
-                status: 'connected' 
-            });
-            
-            io.emit('rooms_update', getRoomsList());
+        // Check if target room exists and is joinable
+        if (!rooms.has(targetId)) {
+            socket.emit('error', { msg: 'Phòng không tồn tại' });
             return;
         }
 
-        // Case 2: Target is a WAITING PLAYER
-        const oppIndex = waitingPlayers.findIndex(p => p.socketId === targetId);
-        if (oppIndex !== -1) {
-            const oppData = waitingPlayers.splice(oppIndex, 1)[0];
-            const roomId = Math.floor(1000 + Math.random() * 9000).toString();
+        const room = rooms.get(targetId);
 
-            const p1 = createPlayer({ clientId: socket.clientId, socketId: socket.id, name: socket.playerName });
-            const p2 = createPlayer({ clientId: oppData.clientId, socketId: oppData.socketId, name: oppData.name });
-
-            const room = createRoom({ roomId, players: [p1, p2], mode: oppData.waitingMode || 'classic' });
-            rooms.set(roomId, room);
-
-            socket.join(roomId);
-            const opponentSocket = io.sockets.sockets.get(oppData.socketId);
-            if (opponentSocket) opponentSocket.join(roomId);
-
-            io.to(socket.id).emit('room_joined', { roomId, opponent: { name: p2.name, fleetReady: false, status: 'connected' }, mode: room.mode });
-            io.to(oppData.socketId).emit('room_joined', { roomId, opponent: { name: p1.name, fleetReady: false, status: 'connected' }, mode: room.mode });
-            io.to(oppData.socketId).emit('opponent_joined', { name: p1.name, fleetReady: false, status: 'connected' });
-            
-            io.emit('rooms_update', getRoomsList());
+        // RULE 1: Chỉ join được nếu phase = WAITING
+        if (room.phase !== GamePhase.WAITING) {
+            socket.emit('error', { msg: 'Trận đấu đang diễn ra, không thể tham gia' });
             return;
         }
 
-        socket.emit('error', { msg: 'Phòng không tồn tại hoặc đối thủ đã rời đi.' });
-    });
+        // RULE 2: Chỉ join được nếu chưa full
+        const activePlayers = room.players.filter(p => p.status !== 'disconnected');
+        if (activePlayers.length >= 2) {
+            socket.emit('error', { msg: 'Phòng đã đầy' });
+            return;
+        }
 
-    socket.on('leave_matchmaking', () => {
-        cleanupWaiting();
+        // OK - Allow join
+        socket.join(targetId);
+        const host = room.players[0];
+        const guest = createPlayer({ 
+            clientId, 
+            socketId: socket.id, 
+            userId,
+            name: playerName 
+        });
+        room.players.push(guest);
+
+        // Reset ready states
+        room.players.forEach(p => {
+            p.ready = false;
+            p.roomReady = false;
+        });
+
+        const hostInfo = { name: host.name, fleetReady: false, roomReady: false, status: host.status };
+        const guestInfo = { name: playerName, fleetReady: false, roomReady: false, status: 'connected' };
+
+        socket.emit('room_joined', { roomId: targetId, opponent: hostInfo, mode: room.mode });
+        io.to(host.socketId).emit('opponent_joined', guestInfo);
+        
         io.emit('rooms_update', getRoomsList());
+        console.log(`[ROOM] ${playerName} joined ${targetId}`);
     });
 
+    /**
+     * LEAVE ROOM
+     */
     socket.on('leave_room', () => {
         handlePlayerLeave(io, socket, 'left');
     });
 
+    /**
+     * GET ACTIVE ROOMS
+     */
     socket.on('get_active_rooms', () => {
         socket.emit('rooms_update', getRoomsList());
     });

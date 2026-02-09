@@ -349,6 +349,8 @@ const translations = {
     donate_desc: 'Help keep the servers running and the fleet operational.',
     email_support: 'Email Support',
     hall_of_valor: 'Hall of Valor',
+    share_room: 'Share Room',
+    copied: 'Copied!',
   },
   vi: {
     // Header
@@ -688,6 +690,8 @@ const translations = {
     donate_desc: 'Giúp duy trì máy chủ và hạm đội hoạt động ổn định.',
     email_support: 'Liên Hệ Qua Email',
     hall_of_valor: 'BẢNG VÀNG VINH DANH',
+    share_room: 'Chia Sẻ Phòng',
+    copied: 'Đã Sao Chép!',
   }
 };
 

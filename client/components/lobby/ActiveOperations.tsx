@@ -28,8 +28,10 @@ const ActiveOperations = ({
   
   const statusLabelMap: Record<string, string> = {
     WAITING: t('room_waiting'),
+    READY: t('status_ready'),
     PLACING: t('room_placing'),
-    BATTLE: t('room_battle'),
+    PLAYING: t('room_battle'),
+    PVE: 'PVE',
     DANGER: 'DANGER'
   };
 
@@ -82,9 +84,9 @@ const ActiveOperations = ({
                       {op.mode === 'salvo' ? t('mode_salvo') : t('mode_classic')}
                     </span>
                   </td>
-                  <td className="px-6 py-6 text-center border-r border-slate-800/30">
+                  <td className="px-6 py-6 border-r border-slate-800/30">
                     <div className="flex items-center justify-center gap-2 tracking-normal">
-                      <div className={`w-2 h-2 rounded-full ${op.statusColor} shadow-[0_0_8px_currentColor]`}></div>
+                      <div className={`w-2 h-2 rounded-full ${op.statusColor} shadow-[0_0_8px_currentColor] animate-pulse`}></div>
                       <span className="text-slate-300">
                         {statusLabelMap[op.status] || op.status}
                       </span>

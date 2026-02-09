@@ -26,8 +26,8 @@ export interface LogEntry {
 
 export enum GamePhase {
   IDLE = 'IDLE',
-  MATCHMAKING = 'MATCHMAKING',
-  PLACEMENT = 'PLACEMENT',
+  WAITING = 'WAITING',
+  PLACING = 'PLACING',
   PLAYING = 'PLAYING',
   ENDED = 'ENDED',
 }
@@ -69,7 +69,7 @@ interface GameContextType {
   setOpponentStatus: (status: 'connected' | 'disconnected') => void;
   setTurn: (turn: GlobalState['currentTurn']) => void;
   addScore: (winner: 'player' | 'opponent', points: number) => void;
-  setGameStatus: (status: GamePhase | 'idle' | 'waiting' | 'playing' | 'ended') => void;
+  setGameStatus: (status: GamePhase | 'idle' | 'waiting' | 'placing' | 'playing' | 'ended' | 'pve' | 'PVE') => void;
   resetGame: () => void;
   prepareRematch: () => void;
   setOpponentFleetReady: (ready: boolean) => void;
@@ -197,7 +197,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  const setGameStatus = useCallback((status: GamePhase | 'idle' | 'waiting' | 'playing' | 'ended') => {
+  const setGameStatus = useCallback((status: GamePhase | 'idle' | 'waiting' | 'placing' | 'playing' | 'ended' | 'pve' | 'PVE') => {
     let finalStatus: GamePhase;
     
     // If it's already one of the enum values, use it directly
@@ -205,9 +205,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       finalStatus = status as GamePhase;
     } else if (typeof status === 'string') {
       switch (status.toLowerCase()) {
-        case 'waiting': finalStatus = GamePhase.MATCHMAKING; break;
+        case 'waiting': finalStatus = GamePhase.WAITING; break;
+        case 'placing': finalStatus = GamePhase.PLACING; break;
         case 'playing': finalStatus = GamePhase.PLAYING; break;
         case 'ended': finalStatus = GamePhase.ENDED; break;
+
         case 'idle': default: finalStatus = GamePhase.IDLE; break;
       }
     } else {
@@ -260,7 +262,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       isFleetReady: false,
       battleLogs: [],
       currentTurn: null,
-      gameStatus: GamePhase.MATCHMAKING,
+      gameStatus: GamePhase.WAITING,
       opponent: prev.opponent ? { ...prev.opponent, fleetReady: false } : null
     }));
   }, []);

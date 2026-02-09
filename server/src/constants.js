@@ -1,7 +1,7 @@
 const GamePhase = {
-    LOBBY: 'LOBBY',
+    WAITING: 'WAITING',
     PLACING: 'PLACING',
-    BATTLE: 'BATTLE',
+    PLAYING: 'PLAYING',
     ENDED: 'ENDED',
     PVE: 'PVE'
 };

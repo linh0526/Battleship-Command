@@ -1,4 +1,4 @@
-const { rooms, waitingPlayers } = require('../state');
+const { rooms, activePve } = require('../state');
 const { getRoomsList } = require('../utils');
 const { createPlayer, createRoom } = require('../factories');
 const { GamePhase } = require('../constants');
@@ -6,12 +6,13 @@ const { GamePhase } = require('../constants');
 const handlePlayerLeave = (io, socket, reason = 'left') => {
     const clientId = socket.clientId;
 
+    // Check rooms (PvP)
     for (const [roomId, room] of rooms.entries()) {
         const index = room.players.findIndex(p => p.clientId === clientId);
         if (index === -1) continue;
 
         const player = room.players[index];
-        const isBattle = room.phase === GamePhase.BATTLE;
+        const isBattle = room.phase === GamePhase.PLAYING;
         console.log(`[EXIT] Player ${player.name} (${clientId}) ${reason} from Room ${roomId} (Phase: ${room.phase})`);
 
         if (reason === 'disconnected') {
@@ -64,15 +65,23 @@ const handlePlayerLeave = (io, socket, reason = 'left') => {
         io.emit('rooms_update', getRoomsList());
         return;
     }
+
+    // Check activePve (PvE)
+    for (const [roomId, room] of activePve.entries()) {
+        const index = room.players.findIndex(p => p.clientId === clientId);
+        if (index !== -1) {
+            console.log(`[PVE] Player ${room.players[index].name} left PVE session ${roomId}`);
+            activePve.delete(roomId);
+            io.emit('rooms_update', getRoomsList());
+            return;
+        }
+    }
 };
 
 module.exports = (io, socket) => {
     socket.on('disconnect', (reason) => {
         console.log(`[DISCONNECT] Socket ${socket.id} (${reason})`);
         
-        const waitIndex = waitingPlayers.findIndex(p => p.socketId === socket.id);
-        if (waitIndex !== -1) waitingPlayers.splice(waitIndex, 1);
-
         handlePlayerLeave(io, socket, 'disconnected');
         
         io.emit('player_count', io.engine.clientsCount);
@@ -96,7 +105,7 @@ module.exports = (io, socket) => {
         const player = createPlayer({ clientId: socket.clientId, socketId: socket.id, name: playerName });
         const room = createRoom({ roomId, players: [player], mode, isPvE: true });
         room.phase = GamePhase.PVE;
-        rooms.set(roomId, room);
+        activePve.set(roomId, room);
 
         socket.emit('room_joined', { roomId: 'PVE_SESSION', mode, isPvE: true });
         io.emit('rooms_update', getRoomsList());

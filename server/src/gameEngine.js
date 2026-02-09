@@ -6,8 +6,8 @@ function startGame(io, roomId) {
     const room = rooms.get(roomId);
     if (!room) return;
 
-    // Transition to BATTLE phase
-    room.phase = GamePhase.BATTLE;
+    // Transition to PLAYING phase
+    room.phase = GamePhase.PLAYING;
 
     // Ngẫu nhiên lượt chơi
     const firstTurnClientId = room.players[Math.floor(Math.random() * room.players.length)].clientId;

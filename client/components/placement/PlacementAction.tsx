@@ -4,7 +4,6 @@ import { useLanguage } from '@/context/LanguageContext';
 
 interface PlacementActionProps {
   isFleetComplete: boolean;
-  isSearching: boolean;
   gameState: any;
   handleAction: () => void;
   isReady: boolean; 
@@ -12,21 +11,18 @@ interface PlacementActionProps {
 
 export default function PlacementAction({
   isFleetComplete,
-  isSearching,
   gameState,
   handleAction,
   isReady  
 }: PlacementActionProps) {
   const { t } = useLanguage();
 
-  const isReadyToStart = isFleetComplete && !gameState.isFleetReady; // Can press Ready
   const isInRoom = !!gameState.roomId;
 
   // Button is disabled if:
-  // 1. Searching (Spinner)
-  // 2. In Room AND Fleet Incomplete (Can't Ready)
-  // 3. In Room AND Already Ready (Already Sent)
-  const isButtonDisabled = isSearching || (isInRoom && (!isFleetComplete || gameState.isFleetReady || isReady));
+  // 1. In Room AND Fleet Incomplete (Can't Ready)
+  // 2. In Room AND Already Ready (Already Sent)
+  const isButtonDisabled = (isInRoom && (!isFleetComplete || gameState.isFleetReady || isReady));
 
   return (
     <section className="flex flex-col gap-6">
@@ -46,27 +42,16 @@ export default function PlacementAction({
             : 'bg-slate-800 text-slate-600 cursor-not-allowed'}
         `}
       >
-        {isSearching ? (
-          <>
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            <span>
-              {gameState.opponent ? t('opponent_placing') : t('searching_opponent')}
-            </span>
-          </>
-        ) : (
-          <>
-            <Target className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-            <span>
-              {!isInRoom 
-                ? t('find_match') 
-                : ((gameState.isFleetReady || isReady) 
-                    ? t('status_waiting') 
-                    : (gameState.gameMode === 'PvE' ? t('come_to_battle') : t('status_ready')))
-              }
-            </span>
-            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </>
-        )}
+        <Target className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+        <span>
+          {!isInRoom 
+            ? t('find_match') 
+            : ((gameState.isFleetReady || isReady) 
+                ? t('status_waiting') 
+                : (gameState.gameMode === 'PvE' ? t('come_to_battle') : t('status_ready')))
+          }
+        </span>
+        <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
       </button>
       {gameState.gameMode !== 'PvE' && (
         <div className="px-2 flex justify-between text-[11px] font-black uppercase text-slate-600 tracking-widest">

@@ -1,11 +1,9 @@
-const rooms = new Map();
-const waitingPlayers = [];
-const activePve = new Map();
+const rooms = new Map(); // PvP rooms only
+const activePve = new Map(); // PvE sessions
 const globalChat = [];
 
 module.exports = {
     rooms,
-    waitingPlayers,
     activePve,
     globalChat
 };

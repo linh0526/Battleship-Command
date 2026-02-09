@@ -17,7 +17,7 @@ export default function Footer() {
     pathname === '/friends' ||
     pathname === '/battle' ||
     pathname === '/placement' ||
-    gameState.gameStatus === GamePhase.PLACEMENT ||
+    gameState.gameStatus === GamePhase.PLACING ||
     gameState.gameStatus === GamePhase.PLAYING ||
     gameState.gameStatus === GamePhase.ENDED
   ) return null;

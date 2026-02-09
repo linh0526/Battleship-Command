@@ -15,6 +15,34 @@ const ProfileSchema = new mongoose.Schema({
         type: String,
         default: 'Unknown'
     },
+    
+    // Stats tổng hợp - KHÔNG lưu chi tiết từng trận
+    stats: {
+        pvp: {
+            matches: { type: Number, default: 0 },
+            wins: { type: Number, default: 0 },
+            losses: { type: Number, default: 0 },
+            draws: { type: Number, default: 0 },
+            shots: {
+                total: { type: Number, default: 0 },
+                hit: { type: Number, default: 0 }
+            },
+            accuracy: { type: Number, default: 0 }, // % - cached for performance
+            avgShotsPerMatch: { type: Number, default: 0 }
+        },
+        pve: {
+            matches: { type: Number, default: 0 },
+            wins: { type: Number, default: 0 },
+            losses: { type: Number, default: 0 },
+            shots: {
+                total: { type: Number, default: 0 },
+                hit: { type: Number, default: 0 }
+            },
+            accuracy: { type: Number, default: 0 },
+            avgShotsPerMatch: { type: Number, default: 0 }
+        }
+    },
+    
     settings: {
         theme: { type: String, default: 'default' },
         soundEnabled: { type: Boolean, default: true },

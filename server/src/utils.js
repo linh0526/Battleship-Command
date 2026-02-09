@@ -1,60 +1,42 @@
-const { waitingPlayers, rooms } = require('./state');
+const { rooms, activePve } = require('./state');
 const { GamePhase } = require('./constants');
 
 function getRoomsList() {
     const list = [];
-    // Thêm người chơi đang chờ vào phòng "Mở"
-    waitingPlayers.forEach(p => {
-        list.push({
-            id: p.socketId,
-            name: `${p.name || 'Unknown'}`,
-            captains: '1/2',
-            status: 'WAITING',
-            statusColor: 'bg-amber-400',
-            mode: p.waitingMode || 'classic'
-        });
-    });
-    // Thêm các trận đấu đang diễn ra
-    rooms.forEach((room, roomId) => {
-        const p1 = room.players[0]?.name || 'Unknown';
-        const p2 = room.players[1]?.name || 'Waiting...';
-        
-        if (room.isPvE) {
-            list.push({
-                id: roomId,
-                name: `${p1} (Training vs AI)`,
-                captains: '1/1',
-                status: 'TRAINING',
-                statusColor: 'bg-indigo-500',
-                mode: room.mode || 'classic',
-                isPvE: true
-            });
-            return;
-        }
 
+    // 1. ROOMS: Active PvP Rooms (Open Room Model)
+    rooms.forEach((room, roomId) => {
+        // Chỉ đếm players đang connected
+        const activePlayers = room.players.filter(p => p.status !== 'disconnected');
+        const p1 = activePlayers[0]?.name || 'Unknown';
+        const p2 = activePlayers[1]?.name || 'Waiting...';
+        
         let status = 'WAITING';
         let statusColor = 'bg-amber-400';
         
-        if (room.players.length === 1) {
+        // Logic status dựa vào phase và số người
+        if (activePlayers.length < 2) {
             status = 'WAITING';
-            statusColor = 'bg-amber-400';
-        } else if (room.players.length === 2) {
-            if (room.phase === GamePhase.BATTLE) {
-                status = 'BATTLE';
+            statusColor = 'bg-amber-400'; // Đang chờ người join
+        } else {
+            // Full room (2 active players)
+            if (room.phase === GamePhase.PLAYING) {
+                status = 'PLAYING';
                 statusColor = 'bg-red-500';
             } else if (room.phase === GamePhase.PLACING) {
                 status = 'PLACING';
                 statusColor = 'bg-blue-400';
-            } else {
-                status = 'LOBBY';
+            } else if (room.phase === GamePhase.WAITING) {
+                status = 'READY'; // Full và đang ở lobby
                 statusColor = 'bg-emerald-500';
             }
         }
 
         list.push({
             id: roomId,
-            name: room.players.length === 1 ? p1 : `${p1} vs ${p2}`,
-            captains: `${room.players.length}/2`,
+            type: 'ROOM',
+            name: activePlayers.length === 1 ? p1 : `${p1} vs ${p2}`,
+            captains: `${activePlayers.length}/2`,
             status: status,
             statusColor: statusColor,
             mode: room.mode || 'classic',
@@ -62,10 +44,31 @@ function getRoomsList() {
         });
     });
 
-    // Sort: PvP First, PvE Last
+    // 2. PVE: Active PvE Sessions
+    activePve.forEach((room, roomId) => {
+        const p1 = room.players[0]?.name || 'Commander';
+        list.push({
+            id: roomId,
+            type: 'ROOM',
+            name: `${p1} (Training vs AI)`,
+            captains: '1/1',
+            status: 'PVE',
+            statusColor: 'bg-indigo-500',
+            mode: room.mode || 'classic',
+            isPvE: true
+        });
+    });
+
+    // Sort: WAITING rooms first, then PLAYING, then PVE
     return list.sort((a, b) => {
+        // PvE last
         if (a.isPvE && !b.isPvE) return 1;
         if (!a.isPvE && b.isPvE) return -1;
+
+        // WAITING rooms first (joinable)
+        if (a.status === 'WAITING' && b.status !== 'WAITING') return -1;
+        if (a.status !== 'WAITING' && b.status === 'WAITING') return 1;
+
         return 0;
     });
 }

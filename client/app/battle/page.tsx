@@ -63,7 +63,7 @@ export function BattleContent() {
     const handleOpponentLeft = () => {
       console.warn('[BATTLE] Opponent left/disconnected');
       // Always show modal if we are in battle stage
-      if (gameState.gameStatus === GamePhase.PLAYING || gameState.gameStatus === GamePhase.PLACEMENT) {
+      if (gameState.gameStatus === GamePhase.PLAYING || gameState.gameStatus === GamePhase.PLACING) {
         setGameStatus(GamePhase.ENDED);
         setGameResult('win'); // They left, you win!
         setShowAbortModal(false);
@@ -102,7 +102,7 @@ export function BattleContent() {
 
   // Auto-fire timer logic
   useEffect(() => {
-    if (gameResult || gameState.gameStatus === GamePhase.MATCHMAKING || !gameState.currentTurn) return;
+    if (gameResult || gameState.gameStatus === GamePhase.WAITING || !gameState.currentTurn) return;
 
     if (turnTimer === 0) {
       if (gameState.currentTurn === 'player') {
@@ -290,7 +290,7 @@ export function BattleContent() {
       
       // Auto-ready if we join a room while in waiting state (from Continue Searching)
       const handleRoomJoined = () => {
-        if (gameState.gameStatus === GamePhase.MATCHMAKING) {
+        if (gameState.gameStatus === GamePhase.WAITING) {
           socket.emit('player_room_ready', { ready: true });
         }
       };
@@ -684,7 +684,7 @@ export function BattleContent() {
         setRematchRequested(true);
         prepareRematch();
         // Force PLACEMENT state for PvE to avoid triggering matchmaking logic
-        setGameStatus(GamePhase.PLACEMENT); 
+        setGameStatus(GamePhase.PLACING); 
     }
   };
 

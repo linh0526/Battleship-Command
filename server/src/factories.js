@@ -1,9 +1,10 @@
 const { GamePhase } = require('./constants');
 
-function createPlayer({ clientId, socketId, name, fleet = [] }) {
+function createPlayer({ clientId, socketId, name, userId = null, fleet = [] }) {
     return {
         clientId,
         socketId,
+        userId, // MongoDB ObjectId - null for guests
         name,
         status: 'connected',
         ready: false, // For fleet placement
@@ -20,9 +21,10 @@ function createRoom({ roomId, players = [], mode = 'classic', isPvE = false }) {
         id: roomId,
         players,
         turn: null,
-        phase: GamePhase.LOBBY,
+        phase: GamePhase.WAITING,
         mode,
         isPvE,
+        maxPlayers: 2, // Added maxPlayers property
         logs: [],
         createdAt: Date.now()
     };

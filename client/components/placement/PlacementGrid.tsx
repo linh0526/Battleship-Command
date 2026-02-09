@@ -10,7 +10,6 @@ interface PlacementGridProps {
   handleCellClick: (r: number, c: number) => void;
   setHoverPos: (pos: {r: number, c: number} | null) => void;
   getCellStatus: (r: number, c: number) => { type: string; ship?: ShipInstance; valid?: boolean; color?: string };
-  isSearching: boolean;
   activeRooms: any[];
   socketId?: string;
   isReady?: boolean;
@@ -22,7 +21,6 @@ export default function PlacementGrid({
   handleCellClick,
   setHoverPos,
   getCellStatus,
-  isSearching,
   activeRooms,
   socketId,
   isReady,
@@ -85,40 +83,7 @@ export default function PlacementGrid({
         </div>
       </motion.div>
 
-      {/* Tactical Overlays */}
-      {isSearching && (
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="absolute inset-x-8 bottom-8 bg-slate-900/90 backdrop-blur-xl border border-primary/30 rounded-2xl p-6 shadow-2xl z-20"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-primary animate-ping"></div>
-              <h3 className="text-xs font-black text-white uppercase tracking-[0.2em]">{t('live_feed')}</h3>
-            </div>
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{activeRooms.length} {t('sectors_active')}</span>
-          </div>
-          
-          <div className="space-y-2 max-h-40 overflow-y-auto custom-scroll pr-2">
-            {activeRooms.map((room, idx) => (
-              <div key={idx} className={`flex items-center justify-between p-3 rounded-lg border ${room.id === socketId ? 'bg-primary/10 border-primary/30' : 'bg-slate-950/50 border-white/5'}`}>
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-black text-white uppercase">{room.name}</span>
-                  <span className="text-[9px] font-bold text-slate-500 uppercase">{room.difficulty} // {room.captains}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className={`w-1.5 h-1.5 rounded-full ${room.statusColor}`}></div>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{room.status}</span>
-                </div>
-              </div>
-            ))}
-            {activeRooms.length === 0 && (
-              <div className="text-center py-4 text-slate-600 text-[10px] font-black uppercase tracking-widest italic">{t('scanning_signals')}</div>
-            )}
-          </div>
-        </motion.div>
-      )}
+
 
       {/* WAITING FOR OPPONENT OVERLAY */}
       {isReady && !isOpponentReady && (

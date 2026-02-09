@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame, GamePhase } from '@/context/GameContext';
 import { useSocket } from '@/context/SocketContext';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, useToast } from '@/context/AuthContext';
 
 // Splitted Components
 import CallsignModal from '@/components/lobby/CallsignModal';
@@ -27,8 +27,10 @@ function LobbyContent() {
   const searchParams = useSearchParams();
   const { t } = useLanguage();
   const { gameState, setGameMode, resetGame, setPlayerName, resetScores, prepareRematch, setRoomId } = useGame();
-  const { socket, isConnected, startPve, joinSpecificRoom, createRoom, joinRandomRoom, updatePlayerName } = useSocket();
+  const { socket, isConnected, isInitialLoad, startPve, joinSpecificRoom, createRoom, joinRandomRoom, updatePlayerName } = useSocket();
   const { user, isAuthenticated } = useAuth();
+  const { show: showToast } = useToast();
+  const { clientId } = useSocket();
 
   const [showNameModal, setShowNameModal] = useState(false);
   const [tempName, setTempName] = useState(gameState.playerName);
@@ -81,6 +83,40 @@ function LobbyContent() {
         if (data.exists) {
           lastProcessedRoomId.current = roomId;
           
+          const isParticipant = data.playerIds?.includes(clientId);
+          
+          // Reconnection Case: User is already in the room
+          if (isParticipant) {
+            console.log("Reconnecting to room:", roomId);
+            if (isAuthenticated && user) {
+              setPlayerName(user.username);
+              setGameMode('PvP');
+              joinSpecificRoom(roomId, user.username);
+            } else {
+              setPendingId(roomId);
+              setPendingAction('join');
+              setGameMode('PvP');
+              setRoomId(roomId);
+              setShowNameModal(true);
+            }
+            return;
+          }
+
+          // Case: Room is playing and user is not a participant
+          if (data.status === 'playing') {
+            showToast('Phòng đang trong trận đấu!||JOIN_DENIED', 'error');
+            router.replace('/', { scroll: false });
+            return;
+          }
+
+          // Case: Room is full and user is not a participant
+          if (data.isFull) {
+            showToast('Phòng đã đầy người!||ROOM_FULL', 'error');
+            router.replace('/', { scroll: false });
+            return;
+          }
+
+          // Standard Join Case: Room is waiting and has space
           if (isAuthenticated && user) {
             setPlayerName(user.username);
             setGameMode('PvP');
@@ -89,12 +125,12 @@ function LobbyContent() {
             setPendingId(roomId);
             setPendingAction('join');
             setGameMode('PvP');
-            // User requested to set roomId once confirmed exists
             setRoomId(roomId);
             setShowNameModal(true);
           }
         } else {
-          // Room doesn't exist, clear URL parameter without full refresh
+          // Room doesn't exist
+          showToast('Phòng không tồn tại hoặc đã bị hủy!||NOT_FOUND', 'error');
           router.replace('/', { scroll: false });
         }
       } catch (e) {
@@ -103,7 +139,7 @@ function LobbyContent() {
     };
 
     checkAndPrepareJoin();
-  }, [searchParams, isConnected, gameState.gameStatus, gameState.roomId, isAuthenticated, user, setPlayerName, setGameMode, joinSpecificRoom, router, setRoomId]);
+  }, [searchParams, isConnected, gameState.gameStatus, gameState.roomId, isAuthenticated, user, setPlayerName, setGameMode, joinSpecificRoom, router, setRoomId, clientId]);
 
   // Socket Events
   useEffect(() => {
@@ -269,7 +305,7 @@ function LobbyContent() {
 
   return (
     <div className="flex flex-col gap-10 w-full mt-6 pb-20">
-      {!isConnected && (
+      {!isInitialLoad && !isConnected && (
         <ConnectionOverlay />
       )}
       {/* Name Entry Modal */}
@@ -349,7 +385,7 @@ function MainController() {
   }, [gameState.roomId, gameState.gameStatus, gameState.isPlayingPvE, searchParams, isConnected, router]);
 
   // View Controller based on Game State
-  if (gameState.gameStatus === GamePhase.PLACEMENT) {
+  if (gameState.gameStatus === GamePhase.PLACING) {
     return <PlacementContent />;
   }
 
