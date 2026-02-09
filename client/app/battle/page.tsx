@@ -398,11 +398,28 @@ export function BattleContent() {
   }, [gameState.currentTurn, gameState.gameMode, aiShotNonce, gameResult]);
 
   const handleAiTurn = () => {
-    // 1. Smart Targeting Logic
     let r: number, c: number;
-    const potentialTargets: {r: number, c: number}[] = [];
+
+    // AI Strategy: Probability Map (Determines the most likely cell to contain a ship)
+    const probMap = Array(10).fill(0).map(() => Array(10).fill(0));
     
-    // Find all active hits (not sunk)
+    // Calculate remaining ships in player's fleet
+    const playerFleetStatus = gameState.playerFleet.map(ship => {
+      let shipHits = 0;
+      for (let i = 0; i < ship.size; i++) {
+        const sr = ship.orientation === 'horizontal' ? ship.row : ship.row + i;
+        const sc = ship.orientation === 'horizontal' ? ship.col + i : ship.col;
+        const shotStatus = enemyShots.get(`${sr}-${sc}`);
+        if (shotStatus === 'hit' || shotStatus === 'sunk') {
+          shipHits++;
+        }
+      }
+      return { ...ship, isSunk: shipHits === ship.size };
+    });
+
+    const remainingShips = playerFleetStatus.filter(s => !s.isSunk);
+
+    // Target Mode weighting: If we have active hits (not sunk), weigh neighbors heavily
     const activeHits: {r: number, c: number}[] = [];
     enemyShots.forEach((val, k) => {
       if (val === 'hit') {
@@ -412,31 +429,83 @@ export function BattleContent() {
     });
 
     if (activeHits.length > 0) {
-      // Seek neighbors
       activeHits.forEach(hit => {
-         const neighbors = [
-           {r: hit.r-1, c: hit.c}, {r: hit.r+1, c: hit.c},
-           {r: hit.r, c: hit.c-1}, {r: hit.r, c: hit.c+1}
-         ];
-         neighbors.forEach(n => {
-           if (n.r >= 0 && n.r <= 9 && n.c >= 0 && n.c <= 9 && !enemyShots.has(`${n.r}-${n.c}`)) {
-             potentialTargets.push(n);
-           }
-         });
+        const neighbors = [
+          {r: hit.r - 1, c: hit.c}, {r: hit.r + 1, c: hit.c},
+          {r: hit.r, c: hit.c - 1}, {r: hit.r, c: hit.c + 1}
+        ];
+        neighbors.forEach(n => {
+          if (n.r >= 0 && n.r <= 9 && n.c >= 0 && n.c <= 9 && !enemyShots.has(`${n.r}-${n.c}`)) {
+            probMap[n.r][n.c] += 100; // Prioritize finishing off ships
+          }
+        });
       });
     }
 
-    if (potentialTargets.length > 0) {
-       // Simple AI: Pick random neighbor of a hit
-       const target = potentialTargets[Math.floor(Math.random() * potentialTargets.length)];
-       r = target.r;
-       c = target.c;
+    // Hunt Mode weighting: Simulate every possible ship placement to build probability map
+    remainingShips.forEach(ship => {
+      const size = ship.size;
+      // Horizontal check
+      for (let row = 0; row < 10; row++) {
+        for (let col = 0; col <= 10 - size; col++) {
+          let possible = true;
+          for (let i = 0; i < size; i++) {
+            const status = enemyShots.get(`${row}-${col + i}`);
+            if (status === 'miss' || status === 'sunk') {
+              possible = false;
+              break;
+            }
+          }
+          if (possible) {
+            for (let i = 0; i < size; i++) probMap[row][col + i]++;
+          }
+        }
+      }
+      // Vertical check
+      for (let row = 0; row <= 10 - size; row++) {
+        for (let col = 0; col < 10; col++) {
+          let possible = true;
+          for (let i = 0; i < size; i++) {
+            const status = enemyShots.get(`${row + i}-${col}`);
+            if (status === 'miss' || status === 'sunk') {
+              possible = false;
+              break;
+            }
+          }
+          if (possible) {
+            for (let i = 0; i < size; i++) probMap[row + i][col]++;
+          }
+        }
+      }
+    });
+
+    // Selection: Pick from cells with the highest probability value
+    let maxVal = -1;
+    let candidates: {r: number, c: number}[] = [];
+    
+    for (let row = 0; row < 10; row++) {
+      for (let col = 0; col < 10; col++) {
+        if (!enemyShots.has(`${row}-${col}`)) {
+          if (probMap[row][col] > maxVal) {
+            maxVal = probMap[row][col];
+            candidates = [{r: row, c: col}];
+          } else if (probMap[row][col] === maxVal) {
+            candidates.push({r: row, c: col});
+          }
+        }
+      }
+    }
+
+    // Fallback just in case
+    if (candidates.length === 0) {
+      do {
+        r = Math.floor(Math.random() * 10);
+        c = Math.floor(Math.random() * 10);
+      } while (enemyShots.has(`${r}-${c}`));
     } else {
-       // Random Hunt Mode
-        do {
-          r = Math.floor(Math.random() * 10);
-          c = Math.floor(Math.random() * 10);
-        } while (enemyShots.has(`${r}-${c}`));
+      const target = candidates[Math.floor(Math.random() * candidates.length)];
+      r = target.r;
+      c = target.c;
     }
     
     const key = `${r}-${c}`;

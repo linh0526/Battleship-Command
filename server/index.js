@@ -9,10 +9,19 @@ const app = express();
 app.use(cors());
 app.use(express.json()); // Allow parsing JSON bodies
 
+// Mongoose Config
+mongoose.set('bufferCommands', false);
+
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('[DB] MongoDB Connected'))
-    .catch(err => console.error('[DB] Connection Error:', err));
+const connectDB = async () => {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI);
+        console.log('[DB] MongoDB Connected');
+    } catch (err) {
+        console.error('[DB] Connection Error:', err);
+        process.exit(1);
+    }
+};
 
 // Auth Routes
 const authRoutes = require('./src/routes/auth');
@@ -106,6 +115,12 @@ io.on('connection', (socket) => {
     
     // Send chat history
     const sendChatHistory = () => {
+        if (mongoose.connection.readyState !== 1) {
+            console.log('[CHAT] DB not ready, skipping history fetch');
+            socket.emit('chat_history', []);
+            return;
+        }
+
         Message.find().sort({ timestamp: -1 }).limit(20)
             .then(messages => {
                 socket.emit('chat_history', messages.reverse());
@@ -113,11 +128,19 @@ io.on('connection', (socket) => {
             .catch(err => console.error('[CHAT] Fetch error:', err));
     };
 
-    sendChatHistory();
-
     socket.on('get_chat_history', sendChatHistory);
 
     socket.on('send_chat', async (data) => {
+        if (mongoose.connection.readyState !== 1) {
+            socket.emit('chat_update', {
+                user: 'SYSTEM',
+                msg: 'Chat service currently unavailable (DB link offline).',
+                type: 'sys',
+                color: 'text-error'
+            });
+            return;
+        }
+
         try {
             const newMessage = new Message({
                 user: socket.playerName || 'Guest',
@@ -137,6 +160,11 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+const start = async () => {
+    await connectDB();
+    server.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+    });
+};
+
+start();

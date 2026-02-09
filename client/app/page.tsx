@@ -34,7 +34,7 @@ function LobbyContent() {
   const [tempName, setTempName] = useState(gameState.playerName);
   const [activeRooms, setActiveRooms] = useState<any[]>([]);
   const [onlineUsers, setOnlineUsers] = useState(0);
-  const [pendingAction, setPendingAction] = useState<'pvp' | 'create' | 'join' | null>(null);
+  const [pendingAction, setPendingAction] = useState<'pvp' | 'create' | 'join' | 'pve' | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [showMatchingModal, setShowMatchingModal] = useState(false);
   const [customGameMode, setCustomGameMode] = useState<'classic' | 'salvo'>('classic');
@@ -186,15 +186,8 @@ function LobbyContent() {
   const handleStartPvE = () => {
     resetGame();
     setGameMode('PvE');
-    let finalName = isAuthenticated && user ? user.username : gameState.playerName;
-
-    if (!finalName || !finalName.trim()) {
-      finalName = generateRandomName();
-    }
-    
-    setPlayerName(finalName);
-    startPve(finalName);
-    // No router.push needed anymore, state will trigger view change
+    setPendingAction('pve');
+    setShowNameModal(true);
   };
 
   const handleCreateRoom = () => {
@@ -262,6 +255,9 @@ function LobbyContent() {
           if (targetRoomId) {
             joinSpecificRoom(targetRoomId, tempName);
           }
+          break;
+        case 'pve':
+          startPve(tempName);
           break;
       }
 

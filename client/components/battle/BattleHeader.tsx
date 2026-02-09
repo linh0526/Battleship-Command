@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LogOut, AlertTriangle, Settings } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import { useGame } from '@/context/GameContext';
 import SettingsModal from '@/components/settings/SettingsModal';
 
 interface BattleHeaderProps {
@@ -27,6 +28,7 @@ export default function BattleHeader({
   roomId
 }: BattleHeaderProps) {
   const { t } = useLanguage();
+  const { gameState } = useGame();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   return (
