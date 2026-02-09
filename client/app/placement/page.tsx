@@ -427,7 +427,7 @@ export function PlacementContent() {
   const isFleetComplete = placedShips.length === SHIP_TYPES.length;
 
   return (
-    <div className="fixed inset-0 bg-[#060912] overflow-y-auto flex flex-col items-center p-2 z-[100]">
+    <div className="fixed inset-0 bg-transparent overflow-y-auto flex flex-col items-center p-4 lg:p-6 z-[100]">
       <div className="w-full max-w-[1440px] flex flex-col">
         <PlacementHeader 
           gameState={{ ...gameState, roomId: gameState.roomId || roomFromUrl }} 
@@ -436,10 +436,9 @@ export function PlacementContent() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* LEFT: TACTICAL PLACEMENT FRAME */}
-          <main className="lg:col-span-9 flex flex-col gap-8 h-full">
-            <div className="glass-panel p-2 bg-[#1e293b]/10 border-slate-800/40 flex flex-row items-stretch gap-2 min-h-[600px] rounded-3xl overflow-hidden">
-                {/* TOOLBAR SIDEBAR */}
-                <div className="flex flex-col gap-4 p-2 bg-slate-950/40 rounded-2xl border border-white/5">
+          <main className="lg:col-span-9 flex flex-col gap-6 md:gap-8 h-full">
+            <div className="glass-panel p-2 md:p-4 bg-[#1e293b]/10 border-slate-800/40 flex flex-col lg:flex-row items-stretch gap-4 md:gap-6 min-h-[500px] lg:min-h-[600px] rounded-3xl overflow-hidden">
+                <div className="flex flex-col gap-4 p-4 md:p-2 bg-slate-950/40 rounded-2xl border border-white/5 lg:w-64 shrink-0">
                   <PlacementControls 
                       rotateShip={rotateShip}
                       autoDeploy={autoDeploy}

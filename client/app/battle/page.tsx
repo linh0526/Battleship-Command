@@ -392,7 +392,7 @@ export function BattleContent() {
     if (gameState.gameMode === 'PvE' && gameState.currentTurn === 'opponent' && !gameResult) {
       const timer = setTimeout(() => {
         handleAiTurn();
-      }, 3888); // Reduced initial AI think time
+      }, 2999); // Reduced initial AI think time
       return () => clearTimeout(timer);
     }
   }, [gameState.currentTurn, gameState.gameMode, aiShotNonce, gameResult]);
@@ -698,7 +698,7 @@ export function BattleContent() {
   }, [gameState.gameMode, endPve, leaveRoom, resetGame, router]);
 
   return (
-    <div className="fixed inset-0 bg-[#060912] overflow-hidden flex items-center justify-center px-6 lg:px-10 py-0">
+    <div className="fixed inset-0 bg-transparent overflow-hidden flex items-center justify-center px-6 lg:px-10 py-0">
       <BattleModals 
         showTurnNotify={showTurnNotify}
         setShowTurnNotify={setShowTurnNotify}
@@ -761,65 +761,61 @@ export function BattleContent() {
 
         {/* TACTICAL INTERFACE */}
         {battleLayout === 'tactical' ? (
-          <div className="flex-1 min-h-0 grid grid-cols-12 gap-6">
+          <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 gap-4 md:gap-6 overflow-y-auto lg:overflow-hidden">
             
             {/* LEFT: ENEMY DATA & TARGETING (DOMINANT) */}
-            <section className="col-span-8 flex flex-col min-h-0 bg-slate-950/20 rounded-2xl border border-white/5 relative overflow-hidden">
-              <div className="flex items-center justify-between p-4 border-b border-white/5 shrink-0 bg-slate-900/10">
+            <section className="flex flex-col min-h-[400px] lg:min-h-0 lg:col-span-8 bg-slate-950/20 rounded-2xl border border-white/5 relative overflow-hidden shrink-0 lg:shrink">
+              <div className="flex items-center justify-between p-3 md:p-4 border-b border-white/5 shrink-0 bg-slate-900/10">
                    <div className="flex items-center gap-3">
                     <Target className={`w-4 h-4 ${(gameState.currentTurn === 'player' || gameState.gameMode === 'PvE') ? 'text-error' : 'text-primary'}`} />
-                    <span className="text-xs font-black text-white uppercase tracking-[0.3em]">
+                    <span className="text-[10px] md:text-xs font-black text-white uppercase tracking-[0.2em] md:tracking-[0.3em]">
                       {(gameState.currentTurn === 'player' || gameState.gameMode === 'PvE') ? t('targeting_matrix') : (t('defensive_grid') || 'Defensive Grid')}
                     </span>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 px-3 py-1 bg-slate-900/60 rounded border border-white/5">
+                    <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-slate-900/60 rounded border border-white/5">
                       <span className="text-xs font-black text-slate-500 uppercase">ID</span>
                       <span className="text-sm font-bold text-white uppercase tracking-widest">{gameState.isPlayingPvE ? 'ghostAI' : (gameState.roomId || roomFromUrl || t('scanning'))}</span>
                     </div>
                   </div>
               </div>
 
-              <div className="flex-1 relative flex items-center justify-center p-6">
+              <div className="flex-1 relative flex items-center justify-center p-4 md:p-6 overflow-hidden">
                  <div className="absolute inset-0 opacity-[0.05] pointer-events-none" 
                       style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #0ea5e9 0px, transparent 200px)', backgroundSize: '100% 100%' }}></div>
                  
-                 <div className="h-full aspect-square max-h-full overflow-hidden">
+                 <div className="h-full aspect-square max-h-full max-w-full overflow-hidden flex items-center justify-center">
                     <AnimatePresence mode="wait">
                       {(gameState.currentTurn === 'player' || gameState.gameMode === 'PvE') ? (
                         <motion.div
                           key="grid-turn-player"
-                          initial={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
+                          initial={{ opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
                           animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                          exit={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
-                          transition={{ duration: 0.5, delay: 0.3 }}
-                          className="w-full h-full"
+                          exit={{ opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
+                          transition={{ duration: 0.4 }}
+                          className="w-full h-full p-1"
                         >
                           <BattleGrid type="enemy" fleet={aiFleet} revealedShips={revealedEnemyShips} shots={playerShots} onCellClick={handleEnemyCellClick} />
                         </motion.div>
                       ) : (
                         <motion.div
                           key="grid-turn-enemy"
-                          initial={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
+                          initial={{ opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
                           animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                          exit={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
-                          transition={{ duration: 0.5, delay: 0.3 }}
-                          className="w-full h-full"
+                          exit={{ opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
+                          transition={{ duration: 0.4 }}
+                          className="w-full h-full p-1"
                         >
                           <BattleGrid type="player" fleet={gameState.playerFleet} shots={enemyShots} />
                         </motion.div>
                       )}
                     </AnimatePresence>
                   </div>
-
-                 <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-10">
-                    <div className="w-[200%] h-1 bg-primary absolute top-0 left-[-50%] animate-[scan_5s_linear_infinite]"></div>
-                 </div>
               </div>
             </section>
 
             {/* RIGHT: DEFENSIVE & LOGISTICS */}
-            <section className="col-span-4 flex flex-col gap-6 min-h-0">
+            <section className="flex flex-col gap-4 md:gap-6 min-h-0 lg:col-span-4 pb-4 lg:pb-0">
                <FleetStatusPanel 
                    playerFleet={(gameState.currentTurn === 'player' || gameState.gameMode === 'PvE') ? gameState.playerFleet : aiFleet}
                    enemyShots={(gameState.currentTurn === 'player' || gameState.gameMode === 'PvE') ? enemyShots : playerShots}

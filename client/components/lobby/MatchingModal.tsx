@@ -76,7 +76,7 @@ export default function MatchingModal({ isOpen, onClose }: MatchingModalProps) {
         className="relative w-full max-w-4xl glass-panel border border-primary/20 overflow-hidden flex flex-col max-h-[90vh]"
       >
         {/* Header */}
-        <div className="p-6 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/40">
+        <div className="p-4 md:p-6 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 bg-slate-900/40">
            <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                  <div className="px-2 py-0.5 bg-primary/20 border border-primary/40 rounded text-[10px] font-black text-primary uppercase tracking-wider">
@@ -87,93 +87,93 @@ export default function MatchingModal({ isOpen, onClose }: MatchingModalProps) {
                  </div>
                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
               </div>
-              <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">
+              <h2 className="text-xl md:text-3xl font-black text-white italic uppercase tracking-tighter">
                 {t('squad_lobby')}
               </h2>
            </div>
            
-           <div className="flex items-center gap-3">
+           <div className="flex items-center gap-2 md:gap-3">
               <button 
                 onClick={handleShareRoom}
-                className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 hover:border-primary/50 text-primary transition-all rounded-xl group"
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 md:px-4 py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 hover:border-primary/50 text-primary transition-all rounded-xl group"
               >
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                <span className="text-[10px] font-black uppercase tracking-widest">{copied ? t('copied') : t('share_room')}</span>
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                <span className="text-[10px] font-black uppercase tracking-widest truncate">{copied ? t('copied') : t('share_room')}</span>
               </button>
 
               <button 
                 onClick={handleLeave}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 hover:bg-error/10 border border-slate-700 hover:border-error/30 text-slate-400 hover:text-error transition-all rounded-xl group"
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 md:px-4 py-2 bg-slate-800/50 hover:bg-error/10 border border-slate-700 hover:border-error/30 text-slate-400 hover:text-error transition-all rounded-xl group"
               >
-                <LogOut className="w-4 h-4" />
-                <span className="text-[10px] font-black uppercase tracking-widest">{t('abandon_mission')}</span>
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-black uppercase tracking-widest truncate">{t('abandon_mission')}</span>
               </button>
            </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-10 grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div className="flex-1 overflow-y-auto p-4 md:p-10 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-10">
            {/* Player Self */}
-           <div className={`p-8 rounded-3xl border-2 transition-all duration-500 flex flex-col ${gameState.isRoomReady ? 'border-primary bg-primary/5 shadow-[0_0_40px_rgba(25,93,230,0.2)]' : 'border-slate-800 bg-slate-900/40'}`}>
-              <div className="flex items-start justify-between mb-8">
-                <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center border border-primary/40 shadow-lg shadow-primary/20">
-                  <Users className="w-8 h-8 text-primary" />
+           <div className={`p-4 md:p-8 rounded-2xl md:rounded-3xl border-2 transition-all duration-500 flex flex-col ${gameState.isRoomReady ? 'border-primary bg-primary/5 shadow-[0_0_40px_rgba(25,93,230,0.2)]' : 'border-slate-800 bg-slate-900/40'}`}>
+              <div className="flex items-start justify-between mb-4 md:mb-8">
+                <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-primary/20 flex items-center justify-center border border-primary/40 shadow-lg shadow-primary/20 shrink-0">
+                  <Users className="w-6 h-6 md:w-8 md:h-8 text-primary" />
                 </div>
                 {gameState.isRoomReady && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-primary/20 border border-primary/40 rounded-full text-[10px] font-black text-primary uppercase tracking-widest">
-                    <CheckCircle2 className="w-4 h-4" />
+                  <div className="flex items-center gap-2 px-3 md:px-4 py-1 md:py-2 bg-primary/20 border border-primary/40 rounded-full text-[10px] font-black text-primary uppercase tracking-widest">
+                    <CheckCircle2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
                     {t('status_ready')}
                   </div>
                 )}
               </div>
               <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">{t('commander_you')}</p>
-              <h3 className="text-4xl font-black text-white italic uppercase mb-8 truncate leading-none">{gameState.playerName}</h3>
+              <h3 className="text-2xl md:text-4xl font-black text-white italic uppercase mb-6 md:mb-8 truncate leading-none">{gameState.playerName}</h3>
               
               <button 
                 onClick={handleToggleReady}
-                className={`w-full py-6 mt-auto rounded-2xl font-black text-lg uppercase tracking-[0.2em] transition-all shadow-xl flex items-center justify-center gap-3 active:scale-95 ${
+                className={`w-full py-4 md:py-6 mt-auto rounded-xl md:rounded-2xl font-black text-base md:text-lg uppercase tracking-[0.2em] transition-all shadow-xl flex items-center justify-center gap-3 active:scale-95 ${
                   gameState.isRoomReady 
                   ? 'bg-slate-800 hover:bg-slate-700 text-slate-400' 
                   : 'bg-primary hover:bg-blue-600 text-white shadow-primary/20'
                 }`}
               >
                 {gameState.isRoomReady ? t('cancel_ready') : t('confirm_ready')}
-                <ChevronRight className={`w-6 h-6 transition-transform ${gameState.isRoomReady ? 'rotate-180' : ''}`} />
+                <ChevronRight className={`w-5 h-5 md:w-6 md:h-6 transition-transform ${gameState.isRoomReady ? 'rotate-180' : ''}`} />
               </button>
            </div>
 
            {/* Opponent */}
-           <div className={`p-8 rounded-3xl border-2 transition-all duration-500 flex flex-col ${gameState.isOpponentRoomReady ? 'border-primary bg-primary/5 shadow-[0_0_40px_rgba(25,93,230,0.2)]' : 'border-slate-800 bg-slate-900/40'}`}>
+           <div className={`p-4 md:p-8 rounded-2xl md:rounded-3xl border-2 transition-all duration-500 flex flex-col ${gameState.isOpponentRoomReady ? 'border-primary bg-primary/5 shadow-[0_0_40px_rgba(25,93,230,0.2)]' : 'border-slate-800 bg-slate-900/40'}`}>
               {gameState.opponent ? (
                 <>
-                  <div className="flex items-start justify-between mb-8">
-                    <div className="w-16 h-16 rounded-2xl bg-secondary/20 flex items-center justify-center border border-secondary/40 shadow-lg shadow-secondary/20">
-                      <Shield className="w-8 h-8 text-secondary" />
+                  <div className="flex items-start justify-between mb-4 md:mb-8">
+                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-secondary/20 flex items-center justify-center border border-secondary/40 shadow-lg shadow-secondary/20 shrink-0">
+                      <Shield className="w-6 h-6 md:w-8 md:h-8 text-secondary" />
                     </div>
                     {gameState.isOpponentRoomReady && (
-                      <div className="flex items-center gap-2 px-4 py-2 bg-primary/20 border border-primary/40 rounded-full text-[10px] font-black text-primary uppercase tracking-widest">
-                        <CheckCircle2 className="w-4 h-4" />
+                      <div className="flex items-center gap-2 px-3 md:px-4 py-1 md:py-2 bg-primary/20 border border-primary/40 rounded-full text-[10px] font-black text-primary uppercase tracking-widest">
+                        <CheckCircle2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
                         {t('status_ready')}
                       </div>
                     )}
                   </div>
                   <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">{t('allied_commander')}</p>
-                  <h3 className="text-4xl font-black text-white italic uppercase mb-8 truncate leading-none">{gameState.opponent.name}</h3>
-                  <div className="mt-auto py-8 flex items-center justify-center border-2 border-dashed border-slate-800/60 rounded-2xl italic text-slate-400 font-bold text-sm uppercase tracking-[0.1em]">
+                  <h3 className="text-2xl md:text-4xl font-black text-white italic uppercase mb-6 md:mb-8 truncate leading-none">{gameState.opponent.name}</h3>
+                  <div className="mt-auto py-6 md:py-8 flex items-center justify-center border-2 border-dashed border-slate-800/60 rounded-xl md:rounded-2xl italic text-slate-400 font-bold text-xs md:text-sm uppercase tracking-[0.1em]">
                     {gameState.isOpponentRoomReady ? t('mission_confirmed') : t('waiting_confirmation')}
                   </div>
                 </>
               ) : (
-                <div className="h-full flex flex-col items-center justify-center text-center gap-6 py-10 border-2 border-dashed border-slate-800/40 rounded-3xl">
+                <div className="h-full flex flex-col items-center justify-center text-center gap-4 md:gap-6 py-8 md:py-10 border-2 border-dashed border-slate-800/40 rounded-2xl md:rounded-3xl">
                   <div className="relative">
-                    <div className="w-20 h-20 border-4 border-slate-800 border-t-primary rounded-full animate-spin"></div>
+                    <div className="w-16 h-16 md:w-20 md:h-20 border-4 border-slate-800 border-t-primary rounded-full animate-spin"></div>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <Zap className="w-6 h-6 text-primary/50" />
+                      <Zap className="w-5 h-5 md:w-6 md:h-6 text-primary/50" />
                     </div>
                   </div>
                   <div>
-                    <p className="text-white font-black uppercase italic tracking-widest mb-2">{t('scanning_frequencies')}</p>
-                    <p className="text-slate-500 text-[10px] uppercase tracking-[0.3em] font-bold">{t('waiting_connection')}</p>
+                    <p className="text-white text-sm md:text-base font-black uppercase italic tracking-widest mb-1 md:mb-2">{t('scanning_frequencies')}</p>
+                    <p className="text-slate-500 text-[9px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-bold">{t('waiting_connection')}</p>
                   </div>
                 </div>
               )}
@@ -181,44 +181,44 @@ export default function MatchingModal({ isOpen, onClose }: MatchingModalProps) {
         </div>
 
         {/* Footer info */}
-        <div className="p-8 bg-slate-900/60 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
-           <div className="flex items-center gap-4">
-              <div className="p-3 bg-primary/10 rounded-xl border border-primary/20">
-                 <Timer className="w-6 h-6 text-primary" />
+        <div className="p-4 md:p-8 bg-slate-900/60 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6">
+           <div className="flex items-center gap-3 md:gap-4 w-full md:w-auto">
+              <div className="p-2 md:p-3 bg-primary/10 rounded-lg md:rounded-xl border border-primary/20">
+                 <Timer className="w-5 h-5 md:w-6 md:h-6 text-primary" />
               </div>
               <div>
-                 <p className="text-white text-xs font-black uppercase tracking-widest leading-none mb-1">{t('pre_match_init')}</p>
-                 <p className="text-slate-500 text-[10px] uppercase font-black italic">{t('protocol_status')}: STANDBY</p>
+                 <p className="text-white text-[10px] md:text-xs font-black uppercase tracking-widest leading-none mb-1">{t('pre_match_init')}</p>
+                 <p className="hidden md:block text-slate-500 text-[10px] uppercase font-black italic">{t('protocol_status')}: STANDBY</p>
               </div>
            </div>
 
            {countdown !== null ? (
-              <div className="flex items-center gap-6 bg-primary px-8 py-4 rounded-2xl shadow-2xl shadow-primary/30 ring-2 ring-white/10">
-                 <Swords className="w-6 h-6 text-white" />
-                 <span className="text-white font-black uppercase tracking-[0.3em] text-lg">
+              <div className="flex items-center justify-center gap-4 md:gap-6 bg-primary px-6 md:px-8 py-3 md:py-4 rounded-xl md:rounded-2xl shadow-2xl shadow-primary/30 ring-2 ring-white/10 w-full md:w-auto">
+                 <Swords className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                 <span className="text-white font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-sm md:text-lg">
                     {t('initiate_deployment')}
                  </span>
                  <motion.div 
                    key={countdown}
                    initial={{ scale: 1.5, opacity: 0 }}
                    animate={{ scale: 1, opacity: 1 }}
-                   className="w-12 h-12 bg-white text-primary rounded-full flex items-center justify-center font-black text-2xl shadow-inner"
+                   className="w-10 h-10 md:w-12 md:h-12 bg-white text-primary rounded-full flex items-center justify-center font-black text-xl md:text-2xl shadow-inner shrink-0"
                  >
                     {countdown}
                  </motion.div>
               </div>
            ) : (
-              <div className="flex items-center gap-8">
+              <div className="flex items-center gap-8 md:gap-8 justify-end w-full md:w-auto">
                  <div className="flex flex-col items-end">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">{t('readiness_desc')}</span>
+                    <span className="hidden md:block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">{t('readiness_desc')}</span>
                     <div className="flex gap-2">
                        <motion.div 
                         animate={{ opacity: gameState.isRoomReady ? 1 : 0.3 }}
-                        className={`w-4 h-1.5 rounded-full ${gameState.isRoomReady ? 'bg-primary' : 'bg-slate-700'}`} 
+                        className={`w-4 h-1.5 md:w-6 md:h-2 rounded-full ${gameState.isRoomReady ? 'bg-primary' : 'bg-slate-700'}`} 
                        />
                        <motion.div 
                         animate={{ opacity: gameState.isOpponentRoomReady ? 1 : 0.3 }}
-                        className={`w-4 h-1.5 rounded-full ${gameState.isOpponentRoomReady ? 'bg-primary' : 'bg-slate-700'}`} 
+                        className={`w-4 h-1.5 md:w-6 md:h-2 rounded-full ${gameState.isOpponentRoomReady ? 'bg-primary' : 'bg-slate-700'}`} 
                        />
                     </div>
                  </div>

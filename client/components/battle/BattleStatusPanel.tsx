@@ -63,12 +63,12 @@ export default function BattleStatusPanel({
   return (
     <section className={`bg-slate-950/40 rounded-xl border border-white/5 overflow-hidden flex flex-col min-h-0 ${isCompact ? 'flex-1' : ''}`}>
       {side === 'both' && (
-        <div className="p-3 border-b border-white/5 bg-slate-900/20 flex items-center gap-2">
+        <div className="hidden md:flex p-3 border-b border-white/5 bg-slate-900/20 items-center gap-2">
           <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('battle_status')}</span>
         </div>
       )}
-      <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
-        <div className={`grid ${side === 'both' ? 'grid-cols-2 gap-6' : 'grid-cols-1'}`}>
+      <div className="flex-1 p-2 md:p-4 overflow-y-auto custom-scrollbar">
+        <div className={`grid ${side === 'both' ? 'grid-cols-2 gap-3 md:gap-6' : 'grid-cols-1'}`}>
           {/* PLAYER VITAL SIGNS */}
           {(side === 'both' || side === 'player') && (
             <div className="space-y-4">

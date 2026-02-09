@@ -34,12 +34,12 @@ export default function LobbyHero({
         {/* MAIN ACTION: TEAM LOBBY */}
         <button 
           onClick={onStartPvP}
-          className="lg:col-span-5 h-[120px] bg-primary hover:bg-blue-600 rounded-2xl flex items-center justify-between px-8 transition-all group relative overflow-hidden shadow-[0_20px_40px_rgba(25,93,230,0.3)]"
+          className="lg:col-span-5 h-[90px] md:h-[120px] bg-primary hover:bg-blue-600 rounded-2xl flex items-center justify-between px-6 md:px-8 transition-all group relative overflow-hidden shadow-[0_20px_40px_rgba(25,93,230,0.3)]"
         >
           <div className="absolute inset-0 bg-white/5 -translate-x-full group-hover:translate-x-0 transition-transform duration-500"></div>
           <div className="flex items-center gap-6">
-            <div className="w-16 h-16 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
-              <Play className="w-10 h-10 fill-white text-white" />
+            <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
+              <Play className="w-8 h-8 md:w-10 md:h-10 fill-white text-white" />
             </div>
             <div className="text-left">
               <p className="text-3xl font-black uppercase tracking-tighter text-white italic">{t('team_lobby_btn')}</p>
@@ -50,12 +50,12 @@ export default function LobbyHero({
         {/* SECONDARY ACTION: PvE TRAINING */}
         <button 
           onClick={onStartPvE}
-          className="lg:col-span-4 h-[120px] bg-slate-900 border border-emerald-500/20 hover:bg-slate-800 rounded-2xl flex items-center justify-between px-8 transition-all group relative overflow-hidden"
+          className="lg:col-span-4 h-[90px] md:h-[120px] bg-slate-900 border border-emerald-500/20 hover:bg-slate-800 rounded-2xl flex items-center justify-between px-6 md:px-8 transition-all group relative overflow-hidden"
         >
           <div className="absolute inset-0 bg-emerald-500/5 -translate-x-full group-hover:translate-x-0 transition-transform duration-500"></div>
           <div className="flex items-center gap-6">
-            <div className="w-16 h-16 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-              <ShieldAlert className="w-10 h-10 text-emerald-400" />
+            <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+              <ShieldAlert className="w-8 h-8 md:w-10 md:h-10 text-emerald-400" />
             </div>
             <div className="text-left">
               <p className="text-2xl lg:text-3xl font-black uppercase tracking-tighter text-emerald-400 italic">{t('pve_training_title')}</p>
@@ -67,7 +67,7 @@ export default function LobbyHero({
         <div className="lg:col-span-3 flex gap-4">
           <button 
             onClick={onCreateRoom}
-            className="flex-1 h-[120px] bg-[#1e293b]/30 hover:bg-[#1e293b]/50 border border-slate-700/50 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all hover:border-slate-500 group"
+            className="flex-1 h-[90px] md:h-[120px] bg-[#1e293b]/30 hover:bg-[#1e293b]/50 border border-slate-700/50 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all hover:border-slate-500 group"
           >
             <Plus className="w-8 h-8 text-white group-hover:scale-110 transition-transform" />
             <div className="text-center px-2">
@@ -76,7 +76,7 @@ export default function LobbyHero({
             </div>
           </button>
           
-          <button className="w-[100px] h-[120px] bg-[#1e293b]/30 hover:bg-[#1e293b]/50 border border-slate-700/50 rounded-2xl flex items-center justify-center transition-all group hover:border-slate-500">
+          <button className="w-[80px] md:w-[100px] h-[90px] md:h-[120px] bg-[#1e293b]/30 hover:bg-[#1e293b]/50 border border-slate-700/50 rounded-2xl flex items-center justify-center transition-all group hover:border-slate-500">
             <RefreshCw className="w-8 h-8 text-slate-500 group-hover:rotate-180 transition-all duration-700 group-hover:text-slate-300" />
           </button>
         </div>
