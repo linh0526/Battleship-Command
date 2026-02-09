@@ -427,7 +427,7 @@ export function PlacementContent() {
   const isFleetComplete = placedShips.length === SHIP_TYPES.length;
 
   return (
-    <div className="fixed inset-0 bg-transparent overflow-y-auto flex flex-col items-center p-4 lg:p-6 z-[100]">
+    <div className="fixed inset-0 bg-transparent overflow-y-auto flex flex-col items-center pt-0 px-4 lg:px-6 pb-6 z-[100]">
       <div className="w-full max-w-[1440px] flex flex-col">
         <PlacementHeader 
           gameState={{ ...gameState, roomId: gameState.roomId || roomFromUrl }} 

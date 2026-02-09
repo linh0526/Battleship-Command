@@ -33,7 +33,7 @@ export default function BattleHeader({
 
   return (
     <>
-      <header className="flex flex-col md:flex-row items-center md:justify-between shrink-0 py-3 gap-3 border-b border-white/5">
+      <header className="flex flex-col md:flex-row items-center md:justify-between shrink-0 pb-3 pt-0 gap-3 border-b border-white/5">
         <div className="w-full md:w-auto flex items-center justify-between gap-6">
           <div className="flex flex-col">
             <div className="flex items-center gap-2">

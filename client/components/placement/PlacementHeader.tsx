@@ -24,7 +24,7 @@ export default function PlacementHeader({ gameState, onAbort }: PlacementHeaderP
 
   return (
     <>
-    <header className="relative flex flex-col md:flex-row items-center md:justify-between shrink-0 py-4 gap-4 border-b border-white/5 mb-8">
+    <header className="relative flex flex-col md:flex-row items-center md:justify-between shrink-0 pb-4 pt-0 gap-4 border-b border-white/5 mb-4">
       {/* Top Mobile Row / Left Desktop Section */}
       <div className="w-full md:w-auto flex items-center justify-between md:justify-start gap-6 z-10 px-2 md:px-0">
         <div className="flex flex-col">

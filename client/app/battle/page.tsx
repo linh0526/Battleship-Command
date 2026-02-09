@@ -698,7 +698,7 @@ export function BattleContent() {
   }, [gameState.gameMode, endPve, leaveRoom, resetGame, router]);
 
   return (
-    <div className="fixed inset-0 bg-transparent overflow-hidden flex items-center justify-center px-6 lg:px-10 py-0">
+    <div className="fixed inset-0 bg-transparent overflow-hidden flex items-start justify-center p-0">
       <BattleModals 
         key="battle-modals-system"
         showTurnNotify={showTurnNotify}
@@ -746,7 +746,7 @@ export function BattleContent() {
           y: [0, -8, 8, -8, 8, 0]
         } : {}}
         transition={{ duration: 0.4, ease: "easeInOut" }}
-        className="w-full h-full max-w-[1440px] flex flex-col gap-6 relative"
+        className="w-full h-full max-w-[1440px] flex flex-col gap-3 relative"
       >
         <BattleHeader 
             currentTurn={gameState.currentTurn}
@@ -816,7 +816,7 @@ export function BattleContent() {
             </section>
 
             {/* RIGHT: DEFENSIVE & LOGISTICS */}
-            <section className="flex flex-col gap-4 md:gap-6 min-h-0 lg:col-span-4 pb-4 lg:pb-0 lg:h-full lg:overflow-hidden">
+            <section className="flex flex-col gap-4 min-h-0 lg:col-span-4 pb-4 lg:pb-0 lg:h-full lg:overflow-hidden">
                <FleetStatusPanel 
                    playerFleet={(gameState.currentTurn === 'player' || gameState.gameMode === 'PvE') ? gameState.playerFleet : aiFleet}
                    enemyShots={(gameState.currentTurn === 'player' || gameState.gameMode === 'PvE') ? enemyShots : playerShots}
