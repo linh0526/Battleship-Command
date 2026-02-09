@@ -1,33 +1,47 @@
-# Battleship Command - Premium Tactical Combat
+<img align='right' src='https://user-images.githubusercontent.com/5713670/87202985-820dcb80-c2b6-11ea-9f56-7ec461c497c3.gif' width='200'>
 
-Trò chơi Bắn thuyền hiện đại hỗ trợ Online (PvP) và đấu với máy (PvE), tối ưu hóa trải nghiệm mượt mà.
+
+
+# ⚓ Battleship Command - Premium Tactical Combat
+
+**Battleship Command** mang trò chơi Bắn thuyền kinh điển lên một tầm cao mới với trải nghiệm hiện đại, hỗ trợ đấu Online (PvP) và đấu với máy (PvE). Đồ họa tinh tế, âm thanh sống động và tính chiến thuật chuyên sâu.
+
+[**Trải nghiệm Demo ngay 🚀**](https://battleship-command.vercel.app/)
+
+---
+
+## 📸 Hình Ảnh Minh Họa
+
+| Sảnh Chờ (Lobby) | Dàn Trận (Setup) | Chiến Đấu (Battle) |
+| :--- | :--- | :--- |
+| ![Lobby](image.png) | ![Setup](https://github.com/user-attachments/assets/f0a282ab-9cc8-4b7d-81ed-a86ab436f1ff) | ![Battle](https://github.com/user-attachments/assets/9bac8566-fd05-4bb5-bac4-503e81702137) |
+
+---
+
+## Tính Năng Nổi Bật
+
+* **Chế độ chơi đa dạng**:
+    * **PvP Online**: Thách đấu người chơi khác trong thời gian thực qua Socket.io.
+    * **PvE**: Rèn luyện kỹ năng với AI.
+* **Chiến thuật chuyên sâu**:
+    * Tự do dàn trận, xoay tàu.
+    * Tính năng **Auto-deploy** giúp triển khai đội hình nhanh chóng.
+* **Trải nghiệm người dùng (UX)**:
+    * Giao diện **Dark Mode** hiện đại, huyền bí.
+    * Hiệu ứng chuyển động mượt mà với Framer Motion.
+    * Hỗ trợ rung (Haptic feedback) và âm thanh chiến đấu sống động.
+* **📱 Responsive**: Tối ưu hoàn hảo cho cả PC và Mobile.
+
 
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=linh0526/Battleship-Command&type=timeline&legend=bottom-right)](https://www.star-history.com/#linh0526/Battleship-Command&type=timeline&legend=bottom-right)
 
-![alt text](image.png)
 
-## 🚀 Tính năng chính
-- **Cơ chế chơi**: PvP Online thời gian thực & PvE với AI.
-- **Chiến thuật**: Dàn trận kéo-thả, xoay tàu, tự động triển khai.
-- **Trải nghiệm**: Giao diện Dark Mode, hiệu ứng âm thanh, Leaderboard toàn cầu.
-- **Responsive**: Tối ưu hoàn hảo cho cả PC và Mobile.
+## Đường dẫn trang web demo
 
-## 🛠 Công nghệ
-- **Frontend**: Next.js, Tailwind CSS, Framer Motion.
-- **Backend**: Node.js, Express, Socket.io.
-- **Database**: MongoDB (World Chat & Leaderboard).
-
-## 💻 Khởi chạy nhanh
-1. **Server**: 
-   ```bash
-   cd server && npm install && npm run dev
-   ```
-2. **Client**: 
-   ```bash
-   cd client && npm install && npm run dev
-   ```
+https://battleship-command.vercel.app/
 
 ---
+
 Phát triển bởi **linh0526** with ❤️ 
