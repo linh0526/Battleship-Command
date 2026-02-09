@@ -77,7 +77,6 @@ interface GameContextType {
   setIsPlayingPvE: (playing: boolean) => void;
   setRoomReady: (ready: boolean) => void;
   setOpponentRoomReady: (ready: boolean) => void;
-  t: (key: string) => string;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -115,10 +114,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             playerName: parsed.playerName || '',
             scores: parsed.scores || { player: 0, opponent: 0 },
             playerFleet: parsed.playerFleet || [],
-            gameMode: parsed.gameMode || 'PvP',
-            isPlayingPvE: parsed.isPlayingPvE || false,
-            roomId: parsed.roomId || null,
-            gameStatus: parsed.gameStatus || GamePhase.IDLE,
+            gameMode: 'PvP',
+            isPlayingPvE: false,
+            roomId: null,
+            gameStatus: GamePhase.IDLE,
             isFleetReady: false,
             isRoomReady: false,
             isOpponentRoomReady: false,
@@ -135,15 +134,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   // Đồng bộ ngược lại LocalStorage khi state thay đổi
   useEffect(() => {
     if (isLoaded) {
-      // Chỉ lưu những thông tin cần thiết để tránh lỗi auto-join khi mở lại tab
+      // Chỉ lưu những thông tin cần thiết và bền vững
       const stateToSave = {
         playerName: gameState.playerName,
         scores: gameState.scores,
-        playerFleet: gameState.playerFleet,
-        gameMode: gameState.gameMode,
-        isPlayingPvE: gameState.isPlayingPvE,
-        roomId: gameState.roomId,
-        gameStatus: gameState.gameStatus
+        playerFleet: gameState.playerFleet
       };
       localStorage.setItem('battleship_state', JSON.stringify(stateToSave));
     }
@@ -284,8 +279,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  // Placeholder for translation function
-  const t = (key: string) => key;
+
 
   return (
     <GameContext.Provider value={{
@@ -308,8 +302,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       resetScores,
       setIsPlayingPvE,
       setRoomReady,
-      setOpponentRoomReady,
-      t
+      setOpponentRoomReady
     }}>
       {children}
     </GameContext.Provider>

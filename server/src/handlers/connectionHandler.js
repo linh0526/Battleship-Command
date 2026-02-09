@@ -1,5 +1,7 @@
-const { rooms, waitingPlayers, activePve } = require('../state');
+const { rooms, waitingPlayers } = require('../state');
 const { getRoomsList } = require('../utils');
+const { createPlayer, createRoom } = require('../factories');
+const { GamePhase } = require('../constants');
 
 const handlePlayerLeave = (io, socket, reason = 'left') => {
     const clientId = socket.clientId;
@@ -8,33 +10,57 @@ const handlePlayerLeave = (io, socket, reason = 'left') => {
         const index = room.players.findIndex(p => p.clientId === clientId);
         if (index === -1) continue;
 
-        console.log(`[EXIT] Player ${socket.playerName || 'Unknown'} (${clientId}) ${reason} from Room ${roomId}`);
+        const player = room.players[index];
+        const isBattle = room.phase === GamePhase.BATTLE;
+        console.log(`[EXIT] Player ${player.name} (${clientId}) ${reason} from Room ${roomId} (Phase: ${room.phase})`);
 
-        // Remove the leaver
-        const leavingPlayer = room.players[index];
+        if (reason === 'disconnected') {
+            player.status = 'disconnected';
+            io.to(roomId).emit('opponent_status_update', { status: 'disconnected' });
+            
+            if (player.disconnectTimer) clearTimeout(player.disconnectTimer);
+
+            player.disconnectTimer = setTimeout(() => {
+                if (player.status === 'disconnected') {
+                    console.log(`[CLEANUP] Grace period expired for ${player.name} in Room ${roomId}`);
+                    if (rooms.has(roomId)) {
+                        const remainingPlayer = rooms.get(roomId).players.find(p => p.clientId !== clientId);
+                        if (remainingPlayer) {
+                            if (isBattle) {
+                                io.to(remainingPlayer.socketId).emit('match_ended', {
+                                    reason: 'opponent_left',
+                                    winner: remainingPlayer.clientId
+                                });
+                            }
+                            io.to(remainingPlayer.socketId).emit('opponent_left');
+                        }
+                        rooms.delete(roomId);
+                        console.log(`[ROOM] Room ${roomId} destroyed after grace period.`);
+                        io.emit('rooms_update', getRoomsList());
+                    }
+                }
+            }, 10000);
+            
+            return;
+        }
+
         room.players.splice(index, 1);
         socket.leave(roomId);
 
-        // If someone is still in the room, they win instantly
         if (room.players.length > 0) {
-            const winner = room.players[0];
-            
-            console.log(`[WIN] Player ${winner.name} wins by default. Reason: opponent_${reason}`);
-
-            // Emit match_ended with reason opponent_left (Client will show Victory modal)
-            io.to(winner.socketId).emit('match_ended', {
-                reason: 'opponent_left',
-                winner: winner.clientId
-            });
-
-            // Signal cleanup
-            io.to(winner.socketId).emit('opponent_left');
+            const remaining = room.players[0];
+            if (isBattle) {
+                console.log(`[WIN] Player ${remaining.name} wins. Reason: opponent_left`);
+                io.to(remaining.socketId).emit('match_ended', {
+                    reason: 'opponent_left',
+                    winner: remaining.clientId
+                });
+            }
+            io.to(remaining.socketId).emit('opponent_left');
         }
 
-        // ROOM LIFE-CYCLE ENDS HERE: Always destroy room
         rooms.delete(roomId);
-        console.log(`[ROOM] Room ${roomId} destroyed.`);
-        
+        console.log(`[ROOM] Room ${roomId} destroyed immediately.`);
         io.emit('rooms_update', getRoomsList());
         return;
     }
@@ -44,11 +70,9 @@ module.exports = (io, socket) => {
     socket.on('disconnect', (reason) => {
         console.log(`[DISCONNECT] Socket ${socket.id} (${reason})`);
         
-        // Remove from global waiting pool
-        const waitIndex = waitingPlayers.findIndex(p => p.id === socket.id);
+        const waitIndex = waitingPlayers.findIndex(p => p.socketId === socket.id);
         if (waitIndex !== -1) waitingPlayers.splice(waitIndex, 1);
 
-        // Handle room exit
         handlePlayerLeave(io, socket, 'disconnected');
         
         io.emit('player_count', io.engine.clientsCount);
@@ -58,41 +82,23 @@ module.exports = (io, socket) => {
     socket.on('start_pve', (data) => {
         const playerName = data?.name || 'Commander';
         socket.playerName = playerName;
-        const clientId = socket.clientId;
+        const mode = data?.mode || 'classic';
 
-        // Ensure not in any previous room
+        // Clean up any existing room before starting PvE
         handlePlayerLeave(io, socket, 'left');
         
-        let roomId;
-        do {
-            roomId = Math.floor(1000 + Math.random() * 9000).toString();
-        } while (rooms.has(roomId));
+        // Use a static-looking ID internally but keep it unique with clientId
+        const roomId = `PVE_SESSION-${socket.clientId}`;
 
         socket.join(roomId);
-        console.log(`[PBE] Created: ${roomId} by ${playerName}`);
+        console.log(`[PVE] PVE_SESSION Started for ${playerName}`);
+        console.log(`[PVE] Room ID: ${roomId}`);
+        const player = createPlayer({ clientId: socket.clientId, socketId: socket.id, name: playerName });
+        const room = createRoom({ roomId, players: [player], mode, isPvE: true });
+        room.phase = GamePhase.PVE;
+        rooms.set(roomId, room);
 
-        rooms.set(roomId, {
-            players: [
-                { 
-                    id: clientId,
-                    clientId: clientId,
-                    socketId: socket.id,
-                    status: 'connected',
-                    name: playerName, 
-                    ready: false, 
-                    fleet: [], 
-                    shotsReceived: new Set(),
-                    stats: { shots: 0, hits: 0, misses: 0, score: 0 }
-                }
-            ],
-            turn: null,
-            state: 'LOBBY',
-            isPvE: true,
-            mode: data?.mode || 'classic',
-            logs: []
-        });
-
-        socket.emit('room_joined', { roomId, mode: data?.mode || 'classic', isPvE: true });
+        socket.emit('room_joined', { roomId: 'PVE_SESSION', mode, isPvE: true });
         io.emit('rooms_update', getRoomsList());
     });
 
@@ -108,3 +114,6 @@ module.exports = (io, socket) => {
 
     return { handlePlayerLeave };
 };
+
+module.exports.registerConnectionHandlers = module.exports;
+module.exports.handlePlayerLeave = handlePlayerLeave;

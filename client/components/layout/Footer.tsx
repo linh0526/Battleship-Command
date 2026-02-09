@@ -3,13 +3,24 @@
 import React from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePathname } from 'next/navigation';
+import { useGame, GamePhase } from '@/context/GameContext';
 
 export default function Footer() {
   const { t } = useLanguage();
   const pathname = usePathname();
+  const { gameState } = useGame();
 
-  // Hide footer on specific pages
-  if (pathname === '/profile' || pathname === '/messages' || pathname === '/friends') return null;
+  // Hide footer on specific pages or during active game phases
+  if (
+    pathname === '/profile' || 
+    pathname === '/messages' || 
+    pathname === '/friends' ||
+    pathname === '/battle' ||
+    pathname === '/placement' ||
+    gameState.gameStatus === GamePhase.PLACEMENT ||
+    gameState.gameStatus === GamePhase.PLAYING ||
+    gameState.gameStatus === GamePhase.ENDED
+  ) return null;
   
   return (
     <footer className="app-footer">

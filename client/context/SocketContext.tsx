@@ -13,7 +13,6 @@ interface SocketContextType {
   joinSpecificRoom: (targetId: string, nameOverride?: string, fleet?: any[]) => void;
   createRoom: (nameOverride?: string, fleet?: any[], mode?: string) => void;
   emitMove: (r: number, c: number) => void;
-  notifyDefeat: () => void;
   emitFleetReady: (fleet: any[]) => void;
   emitUnready: () => void;
   emitRematchRequest: () => void;
@@ -22,16 +21,12 @@ interface SocketContextType {
   onRematchAccepted: (callback: () => void) => void;
   leaveMatchmaking: () => void;
   leaveRoom: () => void;
-  onOpponentLeft: (callback: () => void) => void;
-  onOpponentUnready: (callback: () => void) => void;
   
   startPve: (name: string, mode?: string) => void;
   endPve: () => void;
   
   emitRoomReady: (ready: boolean) => void;
-  onRoomReadyUpdated: (callback: (data: { playerId: string, ready: boolean }) => void) => void;
   emitStartMatch: () => void;
-  onMatchStart: (callback: () => void) => void;
   updatePlayerName: (name: string) => void;
   clientId: string | null;
 }
@@ -104,6 +99,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (data.opponent) {
         setOpponent(data.opponent);
         setFleetReady(false);
+        setOpponentFleetReady(data.opponent.fleetReady || false);
+        setOpponentRoomReady(data.opponent.roomReady || false);
       }
       
       if (data.isPvE) {
@@ -119,9 +116,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.log('SERVER: opponent_joined event received:', opponent.name);
       setOpponent(opponent);
       setFleetReady(false);
-      setOpponentFleetReady(false);
+      setOpponentFleetReady(opponent.fleetReady || false);
       setRoomReady(false);
-      setOpponentRoomReady(false);
+      setOpponentRoomReady(opponent.roomReady || false);
     });
 
     s.on('game_start', (data: { firstTurn: 'player' | 'opponent' }) => {
@@ -134,6 +131,20 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.log('Waiting for opponent...');
       setGameStatus(GamePhase.MATCHMAKING);
       setRoomId('waiting-room');
+    });
+
+    s.on('match_start_init', () => {
+      console.log('SERVER: match_start_init event received');
+      setGameStatus(GamePhase.PLACEMENT);
+    });
+
+    s.on('room_ready_update', ({ playerId, ready }: { playerId: string; ready: boolean }) => {
+      console.log('SERVER: room_ready_update:', playerId, ready);
+      if (playerId === s.id) {
+        setRoomReady(ready);
+      } else {
+        setOpponentRoomReady(ready);
+      }
     });
 
     s.on('new_log', (data: any) => {
@@ -167,10 +178,14 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       showToast(data.msg, 'error');
       addLog({ msg: data.msg, type: 'info', result: 'ERROR' });
       
-      if (data.msg.includes('Phòng không tồn tại') || data.msg.includes('đối thủ đã rời đi')) {
+      if (
+        data.msg.includes('Phòng không tồn tại') || 
+        data.msg.includes('đối thủ đã rời đi') ||
+        data.msg.includes('Phòng đã đầy')
+      ) {
           setRoomId(null);
           setGameStatus(GamePhase.IDLE);
-          router.push('/');
+          router.replace('/');
       }
     });
 
@@ -227,7 +242,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const leaveMatchmaking = useCallback(() => {
     if (socket) socket.emit('leave_matchmaking');
-  }, [socket]);
+    router.replace('/');
+  }, [socket, router]);
 
   const leaveRoom = useCallback(() => {
     if (socket) socket.emit('leave_room');
@@ -238,19 +254,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setOpponentFleetReady(false);
     setRoomReady(false);
     setOpponentRoomReady(false);
-  }, [socket, setRoomId, setOpponent, setGameStatus, setFleetReady, setOpponentFleetReady, setRoomReady, setOpponentRoomReady]);
+    router.replace('/');
+  }, [socket, setRoomId, setOpponent, setGameStatus, setFleetReady, setOpponentFleetReady, setRoomReady, setOpponentRoomReady, router]);
 
-  const onOpponentLeft = useCallback((callback: () => void) => {
-    if (socket) socket.on('opponent_left', callback);
-  }, [socket]);
 
-  const onOpponentUnready = useCallback((callback: () => void) => {
-    if (socket) socket.on('opponent_unready', callback);
-  }, [socket]);
-
-  const notifyDefeat = useCallback(() => {
-    if (socket) socket.emit('player_defeat');
-  }, [socket]);
 
   const startPve = useCallback((name: string, mode?: string) => {
     if (socket) {
@@ -270,17 +277,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (socket) socket.emit('player_room_ready', { ready });
   }, [socket]);
 
-  const onRoomReadyUpdated = useCallback((callback: (data: { playerId: string, ready: boolean }) => void) => {
-    if (socket) socket.on('room_ready_update', callback);
-  }, [socket]);
-
   const emitStartMatch = useCallback(() => {
     if (socket) socket.emit('room_start_match');
   }, [socket]);
 
-  const onMatchStart = useCallback((callback: () => void) => {
-    if (socket) socket.on('match_start_init', callback);
-  }, [socket]);
+
 
   const updatePlayerName = useCallback((name: string) => {
     if (socket && name) {
@@ -291,10 +292,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   return (
     <SocketContext.Provider value={{ 
       socket, isConnected, joinRandomRoom, joinSpecificRoom, createRoom, 
-      emitMove, notifyDefeat, emitFleetReady, emitUnready, emitRematchRequest, 
+      emitMove, emitFleetReady, emitUnready, emitRematchRequest, 
       emitRematchAccept, onRematchRequested, onRematchAccepted, leaveMatchmaking,
-      leaveRoom, onOpponentLeft, onOpponentUnready, startPve, endPve,
-      emitRoomReady, onRoomReadyUpdated, emitStartMatch, onMatchStart,
+      leaveRoom, startPve, endPve,
+      emitRoomReady, emitStartMatch,
       updatePlayerName, clientId
     }}>
       {children}

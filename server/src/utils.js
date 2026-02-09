@@ -1,12 +1,13 @@
-const { waitingPlayers, rooms, activePve } = require('./state');
+const { waitingPlayers, rooms } = require('./state');
+const { GamePhase } = require('./constants');
 
 function getRoomsList() {
     const list = [];
     // Thêm người chơi đang chờ vào phòng "Mở"
     waitingPlayers.forEach(p => {
         list.push({
-            id: p.id,
-            name: `Mission: ${p.playerName || 'Unknown'}`,
+            id: p.socketId,
+            name: `${p.name || 'Unknown'}`,
             captains: '1/2',
             status: 'WAITING',
             statusColor: 'bg-amber-400',
@@ -21,12 +22,12 @@ function getRoomsList() {
         if (room.isPvE) {
             list.push({
                 id: roomId,
-                name: `${p1} vs Ghost AI`, // Special naming for PvE
-                captains: '1/1', // Special captain count for PvE
-                status: 'DANGER',
-                statusColor: 'bg-error',
+                name: `${p1} (Training vs AI)`,
+                captains: '1/1',
+                status: 'TRAINING',
+                statusColor: 'bg-indigo-500',
                 mode: room.mode || 'classic',
-                difficulty: 'VETERAN'
+                isPvE: true
             });
             return;
         }
@@ -38,17 +39,15 @@ function getRoomsList() {
             status = 'WAITING';
             statusColor = 'bg-amber-400';
         } else if (room.players.length === 2) {
-            const allReady = room.players.every(p => p.ready);
-            const allRoomReady = room.players.every(p => p.roomReady);
-            if (allReady) {
+            if (room.phase === GamePhase.BATTLE) {
                 status = 'BATTLE';
                 statusColor = 'bg-red-500';
-            } else if (room.players.length === 2 && !allRoomReady) {
-                status = 'LOBBY';
-                statusColor = 'bg-emerald-500';
-            } else {
+            } else if (room.phase === GamePhase.PLACING) {
                 status = 'PLACING';
                 statusColor = 'bg-blue-400';
+            } else {
+                status = 'LOBBY';
+                statusColor = 'bg-emerald-500';
             }
         }
 
@@ -59,11 +58,16 @@ function getRoomsList() {
             status: status,
             statusColor: statusColor,
             mode: room.mode || 'classic',
-            difficulty: 'VETERAN'
+            isPvE: false
         });
     });
 
-    return list;
+    // Sort: PvP First, PvE Last
+    return list.sort((a, b) => {
+        if (a.isPvE && !b.isPvE) return 1;
+        if (!a.isPvE && b.isPvE) return -1;
+        return 0;
+    });
 }
 
 function sendSystemLog(io, roomId, msg) {

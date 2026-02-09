@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Target } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, notFound, usePathname } from 'next/navigation';
 import { Suspense } from 'react';
 import { useGame, ShipInstance, GamePhase } from '@/context/GameContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -17,15 +17,14 @@ import BattleModals from '@/components/battle/BattleModals';
 import FleetStatusPanel from '@/components/battle/FleetStatusPanel';
 import BattleStatusPanel from '@/components/battle/BattleStatusPanel';
 import BattleFooter from '@/components/battle/BattleFooter';
-import { Shield } from 'lucide-react';
 
-function BattleContent() {
+export function BattleContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const roomFromUrl = searchParams.get('room');
   const { t } = useLanguage();
   const { 
-    emitMove, notifyDefeat, emitRematchRequest, 
+    emitMove, emitRematchRequest, 
     emitRematchAccept, onRematchRequested, onRematchAccepted, 
     socket, leaveRoom, endPve, clientId: myClientId, joinRandomRoom
   } = useSocket();
@@ -35,11 +34,8 @@ function BattleContent() {
   const { 
     battleLayout, enableSound, enableVibration, healthBarStyle
   } = useSettings();
-  
   const [showOpponentLeftModal, setShowOpponentLeftModal] = useState(false);
   const [showAbortModal, setShowAbortModal] = useState(false);
-
-  
   // Track shots
   const [playerShots, setPlayerShots] = useState<Map<string, 'hit' | 'miss' | 'sunk'>>(new Map());
   const [enemyShots, setEnemyShots] = useState<Map<string, 'hit' | 'miss' | 'sunk'>>(new Map());
@@ -177,7 +173,7 @@ function BattleContent() {
       addScore('opponent', 1);
       addLog({ msg: t('log_retreat'), result: t('log_mission_failed'), type: 'sys' });
     }
-  }, [playerShots, enemyShots, aiFleet, gameState.playerFleet, gameResult, addLog, gameState.gameMode, notifyDefeat, addScore]);
+  }, [playerShots, enemyShots, aiFleet, gameState.playerFleet, gameResult, addLog, gameState.gameMode, addScore]);
 
   // Turn Notification Trigger
   useEffect(() => {
@@ -283,7 +279,7 @@ function BattleContent() {
       };
 
       const handleMatchStart = () => {
-        router.push('/placement');
+        // No need for router.push, state update is enough
       };
 
       socket.on('shot_processed', handleShotProcessed);
@@ -324,7 +320,7 @@ function BattleContent() {
 
          onRematchAccepted(() => {
              prepareRematch();
-             router.push('/placement');
+             
          });
 
          return () => {
@@ -620,7 +616,6 @@ function BattleContent() {
         prepareRematch();
         // Force PLACEMENT state for PvE to avoid triggering matchmaking logic
         setGameStatus(GamePhase.PLACEMENT); 
-        router.push('/placement');
     }
   };
 
@@ -777,85 +772,7 @@ function BattleContent() {
                />
             </section>
           </div>
-        ) : (
-          /* PARALLEL LAYOUT */
-          <div className="flex-1 min-h-0 grid grid-cols-2 gap-8">
-            {/* LEFT: MY FLEET (DEFENSE) */}
-            <div className="flex flex-col gap-6 min-h-0">
-              <section className="flex-1 flex flex-col min-h-0 bg-slate-950/20 rounded-2xl border border-white/5 relative overflow-hidden">
-                <div className="flex items-center justify-between p-3 border-b border-white/5 shrink-0 bg-slate-900/10">
-                    <div className="flex items-center gap-3">
-                      <Shield className="w-4 h-4 text-primary" />
-                      <span className="text-xs font-black text-white uppercase tracking-[0.3em]">{t('defensive_grid')}</span>
-                    </div>
-                </div>
-
-                <div className="flex-1 relative flex items-center justify-center p-4">
-                   <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
-                        style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #0ea5e9 0px, transparent 200px)', backgroundSize: '100% 100%' }}></div>
-                   
-                   <div className="h-full aspect-square max-h-full">
-                      <BattleGrid type="player" fleet={gameState.playerFleet} shots={enemyShots} />
-                   </div>
-                </div>
-              </section>
-              
-              <div className="shrink-0">
-                <BattleStatusPanel 
-                    playerFleet={gameState.playerFleet}
-                    enemyFleet={[]}
-                    playerShots={playerShots}
-                    enemyShots={enemyShots}
-                    gameMode={gameState.gameMode}
-                    healthBarStyle={healthBarStyle}
-                    side="player"
-                    isCompact={true}
-                />
-              </div>
-            </div>
-
-            {/* RIGHT: ENEMY FLEET (OFFENSE) */}
-            <div className="flex flex-col gap-6 min-h-0">
-              <section className="flex-1 flex flex-col min-h-0 bg-slate-950/20 rounded-2xl border border-white/5 relative overflow-hidden">
-                <div className="flex items-center justify-between p-3 border-b border-white/5 shrink-0 bg-slate-900/10">
-                    <div className="flex items-center gap-3">
-                      <Target className="w-4 h-4 text-error" />
-                      <span className="text-xs font-black text-white uppercase tracking-[0.3em]">{t('targeting_matrix')}</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-3 py-1 bg-slate-900/60 rounded border border-white/5">
-                      <span className="text-[10px] font-black text-slate-500 uppercase">RADAR</span>
-                      <span className="text-xs font-bold text-white uppercase tracking-widest">{gameState.isPlayingPvE ? 'ghostAI' : (gameState.roomId || roomFromUrl || 'SCAN')}</span>
-                    </div>
-                </div>
-
-                <div className="flex-1 relative flex items-center justify-center p-4">
-                   <div className="absolute inset-0 opacity-[0.05] pointer-events-none" 
-                        style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #ef4444 0px, transparent 200px)', backgroundSize: '100% 100%' }}></div>
-                   
-                   <div className="h-full aspect-square max-h-full">
-                      <BattleGrid type="enemy" fleet={aiFleet} revealedShips={revealedEnemyShips} shots={playerShots} onCellClick={handleEnemyCellClick} />
-                   </div>
-                </div>
-              </section>
-
-              <div className="shrink-0">
-                <BattleStatusPanel 
-                    playerFleet={[]}
-                    enemyFleet={gameState.gameMode === 'PvE' ? aiFleet : [
-                      ...revealedEnemyShips,
-                      ...Array.from({ length: Math.max(0, 5 - revealedEnemyShips.length) }).map((_, i) => ({ id: `unknown-${i}`, name: 'Scanning...', size: 3, isUnknown: true }))
-                    ]}
-                    playerShots={playerShots}
-                    enemyShots={enemyShots}
-                    gameMode={gameState.gameMode}
-                    healthBarStyle={healthBarStyle}
-                    side="enemy"
-                    isCompact={true}
-                />
-              </div>
-            </div>
-          </div>
-        )}
+        ) : null}
 
         <BattleFooter accuracy={playerAccuracy} sunkEnemyShips={sunkEnemyShips} />
       </motion.div>

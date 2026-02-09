@@ -24,8 +24,7 @@ export default function MatchingModal({ isOpen, onClose }: MatchingModalProps) {
   const { t } = useLanguage();
   const { gameState, setRoomReady, setOpponentRoomReady } = useGame();
   const { 
-    socket, emitRoomReady, onRoomReadyUpdated, 
-    emitStartMatch, onMatchStart, leaveRoom, onOpponentLeft 
+    socket, emitRoomReady, emitStartMatch, leaveRoom 
   } = useSocket();
 
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -47,31 +46,7 @@ export default function MatchingModal({ isOpen, onClose }: MatchingModalProps) {
     return () => clearTimeout(timer);
   }, [gameState.isRoomReady, gameState.isOpponentRoomReady, countdown, emitStartMatch]);
 
-  useEffect(() => {
-    if (!socket || !isOpen) return;
 
-    onRoomReadyUpdated(({ playerId, ready }) => {
-      if (playerId === socket.id) {
-        setRoomReady(ready);
-      } else {
-        setOpponentRoomReady(ready);
-      }
-    });
-
-    onMatchStart(() => {
-      // Chuyển thẳng sang trang dàn trận
-      router.push(`/placement?room=${gameState.roomId || roomFromUrl}`);
-    });
-
-    onOpponentLeft(() => {
-      setOpponentRoomReady(false);
-    });
-
-    return () => {
-      socket.off('room_ready_update');
-      socket.off('match_start_init');
-    };
-  }, [socket, isOpen, onRoomReadyUpdated, onMatchStart, onOpponentLeft, setRoomReady, setOpponentRoomReady, router, gameState.roomId, roomFromUrl]);
 
   if (!isOpen) return null;
 

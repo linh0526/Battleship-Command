@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams, notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { useGame, ShipInstance, Orientation, GamePhase } from '@/context/GameContext';
 import { useSocket } from '@/context/SocketContext';
@@ -24,7 +24,7 @@ const SHIP_TYPES = [
   { name: 'ship_destroyer', size: 2, icon: '⛵', id: 'DD-08', color: 'bg-sky-500', text: 'text-sky-400', border: 'border-sky-500/50' },
 ];
 
-function PlacementContent() {
+export function PlacementContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const roomFromUrl = searchParams.get('room');
@@ -39,6 +39,12 @@ function PlacementContent() {
   const [showOpponentLeftModal, setShowOpponentLeftModal] = useState(false);
   const [showAbortModal, setShowAbortModal] = useState(false);
   const isTransitioningRef = useRef(false);
+
+  // Access Guard: Prevent standalone URL access
+  if (pathname === '/placement') {
+    notFound();
+    return null;
+  }
   
   const statusRef = useRef(gameState.gameStatus);
   useEffect(() => {
@@ -54,14 +60,9 @@ function PlacementContent() {
 
   useEffect(() => {
     return () => {
-      leaveMatchmaking();
-      // Only end PvE if we are leaving the flow without starting the game
-      // We check ref to avoid closure issues with state in cleanup
-      if (gameState.gameMode === 'PvE' && statusRef.current !== GamePhase.PLAYING && !isTransitioningRef.current) {
-        endPve();
-      }
+      // Clean up local listeners if any
     };
-  }, [leaveMatchmaking, gameState.gameMode, endPve]);
+  }, []);
 
   // Listen for opponent leaving
   useEffect(() => {
@@ -302,7 +303,7 @@ function PlacementContent() {
              // Refresh Session ID
              setRoomId('pve-session-' + Date.now());
              setTurn('player');
-             router.push('/battle');
+             // router.push('/battle'); // Removed for unified URL handling
         } else {
             // PvP Mode
             setIsSearching(true);
@@ -350,13 +351,14 @@ function PlacementContent() {
     // 3. Current screen is relevant to the game flow (Golden Rule)
     if (
         pathname !== '/placement' &&
-        pathname !== '/waiting'
+        pathname !== '/waiting' &&
+        pathname !== '/'
     ) return;
     if (gameState.gameStatus === GamePhase.PLAYING) {
-      console.log('>>> REDIRECTING TO BATTLE');
-      router.push(`/battle?room=${gameState.roomId || roomFromUrl}`);
+      console.log('>>> SWITCHING TO BATTLE VIEW');
+      // No navigation needed, page.tsx will handle the switch
     }
-  }, [gameState.gameStatus, router, pathname, gameState.roomId, roomFromUrl]);
+  }, [gameState.gameStatus]);
 
   const clearFleet = () => {
     if (isReady) return;

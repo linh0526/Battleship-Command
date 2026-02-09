@@ -11,28 +11,13 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { 
-    battleLayout, setBattleLayout,
     backgroundMode, setBackgroundMode,
     enableSound, setEnableSound,
-    enableVibration, setEnableVibration,
-    healthBarStyle, setHealthBarStyle
+    enableVibration, setEnableVibration
   } = useSettings();
   const { t, language, setLanguage } = useLanguage();
 
-  const layoutOptions: { id: BattleLayout; label: string; desc: string; icon: any }[] = [
-    { 
-      id: 'tactical', 
-      label: t('layout_tactical') || 'Tactical Layout', 
-      desc: t('layout_tactical_desc') || 'Standard view with focus on enemy grid and tactical minimap.',
-      icon: Layout 
-    },
-    { 
-      id: 'parallel', 
-      label: t('layout_parallel') || 'Parallel Matrices', 
-      desc: t('layout_parallel_desc') || 'Two equal-sized grids displayed side-by-side without scaling down.',
-      icon: Monitor 
-    }
-  ];
+
 
   const backgroundOptions: { id: BackgroundMode; label: string; desc: string; icon: any; color: string }[] = [
     {
@@ -158,91 +143,9 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </div>
               </section>
 
-              {/* Layout Selection */}
-              <section>
-                <div className="flex items-center gap-2 mb-4">
-                  <Monitor className="w-4 h-4 text-primary" />
-                  <h3 className="text-sm font-black text-white uppercase tracking-widest">{t('battle_layout') || 'Battle Layout'}</h3>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {layoutOptions.map((opt) => (
-                    <button
-                      key={opt.id}
-                      onClick={() => setBattleLayout(opt.id)}
-                      className={`flex flex-col text-left p-4 rounded-xl border-2 transition-all group ${
-                        battleLayout === opt.id 
-                          ? 'border-primary bg-primary/5 ring-1 ring-primary/20' 
-                          : 'border-white/5 bg-white/2 hover:border-white/10 hover:bg-white/5'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className={`p-2 rounded-lg shrink-0 ${battleLayout === opt.id ? 'bg-primary text-white' : 'bg-slate-800 text-slate-400 group-hover:text-slate-200'}`}>
-                          <opt.icon className="w-5 h-5" />
-                        </div>
-                        <span className={`font-black uppercase tracking-tight ${battleLayout === opt.id ? 'text-white' : 'text-slate-300'}`}>
-                          {opt.label}
-                        </span>
-                        {battleLayout === opt.id && (
-                          <div className="ml-auto w-4 h-4 rounded-full bg-primary flex items-center justify-center">
-                            <div className="w-2 h-2 rounded-full bg-white" />
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-500 leading-relaxed pl-12">
-                        {opt.desc}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </section>
 
-              {/* Health Bar Style Selection */}
-              <section className="pt-4 border-t border-white/5">
-                <div className="flex items-center gap-2 mb-4">
-                  <Shield className="w-4 h-4 text-primary" />
-                  <h3 className="text-sm font-black text-white uppercase tracking-widest">{t('settings_health_bar') || 'Health Bar Style'}</h3>
-                </div>
-                
-                <div className="flex gap-4">
-                  <button 
-                    onClick={() => setHealthBarStyle('modern')}
-                    className={`flex-1 flex flex-col p-4 rounded-xl border-2 transition-all ${
-                        healthBarStyle === 'modern' 
-                        ? 'border-primary bg-primary/5 ring-1 ring-primary/20' 
-                        : 'border-white/5 bg-white/2 hover:border-white/10 hover:bg-white/5'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                       <span className={`text-xs font-black uppercase tracking-widest ${healthBarStyle === 'modern' ? 'text-white' : 'text-slate-400'}`}>{t('health_modern')}</span>
-                       {healthBarStyle === 'modern' && <div className="w-2 h-2 rounded-full bg-primary" />}
-                    </div>
-                    <div className="flex gap-1">
-                       <div className="h-1.5 flex-1 bg-primary rounded-full shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
-                       <div className="h-1.5 flex-1 bg-primary rounded-full shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
-                       <div className="h-1.5 flex-1 bg-slate-800 rounded-full" />
-                    </div>
-                  </button>
 
-                  <button 
-                    onClick={() => setHealthBarStyle('minimalist')}
-                    className={`flex-1 flex flex-col p-4 rounded-xl border-2 transition-all ${
-                        healthBarStyle === 'minimalist' 
-                        ? 'border-primary bg-primary/5 ring-1 ring-primary/20' 
-                        : 'border-white/5 bg-white/2 hover:border-white/10 hover:bg-white/5'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                       <span className={`text-xs font-black uppercase tracking-widest ${healthBarStyle === 'minimalist' ? 'text-white' : 'text-slate-400'}`}>{t('health_minimalist')}</span>
-                       {healthBarStyle === 'minimalist' && <div className="w-2 h-2 rounded-full bg-primary" />}
-                    </div>
-                    <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                       <div className="h-full w-2/3 bg-primary" />
-                    </div>
-                  </button>
-                </div>
-                <p className="mt-2 text-[10px] text-slate-500 font-bold uppercase tracking-tight">{t('settings_health_bar_desc')}</p>
-              </section>
+
 
               {/* Background Selection */}
               <section className="pt-4 border-t border-white/5">

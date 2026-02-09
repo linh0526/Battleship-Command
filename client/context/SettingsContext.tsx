@@ -13,7 +13,6 @@ export type HealthBarStyle = 'modern' | 'minimalist';
 
 interface SettingsContextType {
   battleLayout: BattleLayout;
-  setBattleLayout: (layout: BattleLayout) => void;
   backgroundMode: BackgroundMode;
   setBackgroundMode: (mode: BackgroundMode) => void;
   enableSound: boolean;
@@ -21,24 +20,20 @@ interface SettingsContextType {
   enableVibration: boolean;
   setEnableVibration: (enabled: boolean) => void;
   healthBarStyle: HealthBarStyle;
-  setHealthBarStyle: (style: HealthBarStyle) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const [battleLayout, setBattleLayoutState] = useState<BattleLayout>('tactical');
+  const battleLayout: BattleLayout = 'tactical';
   const [backgroundMode, setBackgroundModeState] = useState<BackgroundMode>('tactical-grid');
   const [enableSound, setEnableSoundState] = useState<boolean>(true);
   const [enableVibration, setEnableVibrationState] = useState<boolean>(true);
-  const [healthBarStyle, setHealthBarStyleState] = useState<HealthBarStyle>('modern');
+  const healthBarStyle: HealthBarStyle = 'modern';
 
   // Load from localStorage on mount
   useEffect(() => {
-    const savedLayout = localStorage.getItem('battleLayout') as BattleLayout;
-    if (savedLayout && (savedLayout === 'tactical' || savedLayout === 'parallel')) {
-      setBattleLayoutState(savedLayout);
-    }
+    // Layout and HealthBar style are now defaults (tactical/modern)
 
     const savedBgMode = localStorage.getItem('backgroundMode') as BackgroundMode;
     const validModes: BackgroundMode[] = [
@@ -59,17 +54,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     if (savedVibration !== null) {
       setEnableVibrationState(savedVibration === 'true');
     }
-
-    const savedHealthStyle = localStorage.getItem('healthBarStyle') as HealthBarStyle;
-    if (savedHealthStyle === 'modern' || savedHealthStyle === 'minimalist') {
-      setHealthBarStyleState(savedHealthStyle);
-    }
   }, []);
 
-  const setBattleLayout = (layout: BattleLayout) => {
-    setBattleLayoutState(layout);
-    localStorage.setItem('battleLayout', layout);
-  };
+  // setBattleLayout is now removed as it is hardcoded to 'tactical'
 
   const setBackgroundMode = (mode: BackgroundMode) => {
     setBackgroundModeState(mode);
@@ -86,18 +73,15 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('enableVibration', String(enabled));
   };
 
-  const setHealthBarStyle = (style: HealthBarStyle) => {
-    setHealthBarStyleState(style);
-    localStorage.setItem('healthBarStyle', style);
-  };
+  // setHealthBarStyle is now removed as it is hardcoded to 'modern'
 
   return (
     <SettingsContext.Provider value={{ 
-      battleLayout, setBattleLayout,
+      battleLayout,
       backgroundMode, setBackgroundMode,
       enableSound, setEnableSound,
       enableVibration, setEnableVibration,
-      healthBarStyle, setHealthBarStyle
+      healthBarStyle
     }}>
       {children}
     </SettingsContext.Provider>

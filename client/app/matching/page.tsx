@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, notFound, usePathname } from 'next/navigation';
 import { Suspense } from 'react';
 import { useGame } from '@/context/GameContext';
 import { useSocket } from '@/context/SocketContext';
@@ -11,11 +11,18 @@ import { Users, Shield, Zap, LogOut, Swords, Timer, CheckCircle2, ChevronRight, 
 
 function MatchingContent() {
   const router = useRouter();
+  const pathname = usePathname();
   const { t } = useLanguage();
   const { gameState, setRoomReady, setOpponentRoomReady, setGameStatus } = useGame();
+
+  // Access Guard: Prevent standalone URL access
+  if (pathname === '/matching') {
+    notFound();
+    return null;
+  }
   const { 
-    socket, isConnected, emitRoomReady, onRoomReadyUpdated, 
-    emitStartMatch, onMatchStart, leaveRoom, onOpponentLeft 
+    socket, isConnected, emitRoomReady, 
+    emitStartMatch, leaveRoom 
   } = useSocket();
 
   const searchParams = useSearchParams();
@@ -27,7 +34,7 @@ function MatchingContent() {
   // Recovery logic: If URL has room but state doesn't, wait for socket recovery
   // SocketContext already handles server-side recovery on connect.
 
-  // Countdown logic when both ready
+  // both ready -> countdown -> start match
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (gameState.isRoomReady && gameState.isOpponentRoomReady) {
@@ -47,37 +54,12 @@ function MatchingContent() {
   // Safety redirect - ONLY if both state and URL are missing
   useEffect(() => {
     if (!gameState.roomId && !roomFromUrl && isConnected) {
-      console.warn('[MATCHING] No room found in state or URL. Aborting.');
+      console.log('[MATCHING] No room found in state or URL. Aborting.');
       router.push('/');
     }
   }, [gameState.roomId, roomFromUrl, isConnected, router]);
 
-  useEffect(() => {
-    if (!socket) return;
-
-    onRoomReadyUpdated(({ playerId, ready }) => {
-      if (playerId === socket.id) {
-        setRoomReady(ready);
-      } else {
-        setOpponentRoomReady(ready);
-      }
-    });
-
-    onMatchStart(() => {
-      // Đính kèm ID phòng sang trang placement để giữ liên kết
-      router.push(`/placement?room=${gameState.roomId || roomFromUrl}`);
-    });
-
-    onOpponentLeft(() => {
-      setOpponentRoomReady(false);
-    });
-
-    // Cleanup
-    return () => {
-      socket.off('room_ready_update');
-      socket.off('match_start_init');
-    };
-  }, [socket, onRoomReadyUpdated, onMatchStart, onOpponentLeft, setRoomReady, setOpponentRoomReady, router, gameState.roomId, roomFromUrl]);
+  // Manual socket handling removed as it's now global in SocketContext
 
   const handleToggleReady = () => {
     const nextReady = !gameState.isRoomReady;

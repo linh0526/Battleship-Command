@@ -1,6 +1,5 @@
 "use client";
 
-import React from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/context/LanguageContext';
 import { 
@@ -8,21 +7,22 @@ import {
   Layout, Ship, Crosshair, Trophy, Info, AlertOctagon,
   Anchor, Navigation, Zap, Radio
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function HowToPlayPage() {
-  const { t } = useLanguage();
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.15
+   const { t } = useLanguage();
+   const router = useRouter();
+   const containerVariants = {
+      hidden: { opacity: 0 },
+      visible: {
+         opacity: 1,
+         transition: {
+         staggerChildren: 0.15
+         }
       }
-    }
-  };
+   };
 
-  const itemVariants = {
+   const itemVariants = {
     hidden: { opacity: 0, y: 30 },
     visible: { 
       opacity: 1, 
@@ -263,7 +263,7 @@ export default function HowToPlayPage() {
           <motion.button 
             whileHover={{ scale: 1.05, backgroundColor: '#1d4ed8' }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => window.location.href = '/'}
+            onClick={() => router.push('/')}
             className="px-16 py-6 bg-primary text-white rounded-2xl font-black uppercase tracking-[0.4em] shadow-[0_20px_60px_rgba(25,93,230,0.4)] transition-all text-base relative z-10"
           >
             {t('come_to_battle')}

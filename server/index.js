@@ -33,8 +33,9 @@ const PORT = process.env.PORT || 3001;
 const Message = require('./src/models/Message');
 
 // Import state, utils, and handlers
-const { rooms, waitingPlayers, activePve } = require('./src/state');
+const { rooms, waitingPlayers } = require('./src/state');
 const { getRoomsList } = require('./src/utils');
+const { GamePhase } = require('./src/constants');
 const registerRoomHandlers = require('./src/handlers/roomHandler');
 const registerGameHandlers = require('./src/handlers/gameHandler');
 const registerConnectionHandlers = require('./src/handlers/connectionHandler');
@@ -75,14 +76,17 @@ io.on('connection', (socket) => {
                     fleetReady: opponent.ready,
                     status: opponent.status 
                 } : null,
-                mode: room.mode
+                mode: room.mode,
+                isPvE: room.isPvE
             });
             
-            if (room.turn) {
+            if (room.turn && room.phase === GamePhase.BATTLE) {
                 socket.emit('turn_change', { turn: room.turn });
                 socket.emit('game_start', { 
                     firstTurn: room.turn === clientId ? 'player' : 'opponent' 
                 });
+            } else if (room.phase === GamePhase.PLACING) {
+                socket.emit('match_start_init');
             }
 
             // Notify opponent
@@ -91,14 +95,13 @@ io.on('connection', (socket) => {
         }
     }
 
-    io.emit('player_count', io.engine.clientsCount);
-
     // Register Handlers
     registerRoomHandlers(io, socket);
     registerGameHandlers(io, socket);
     registerConnectionHandlers(io, socket);
 
     // Initial broadcast
+    io.emit('player_count', io.engine.clientsCount);
     socket.emit('rooms_update', getRoomsList());
     
     // Send chat history
@@ -127,6 +130,10 @@ io.on('connection', (socket) => {
         } catch (err) {
             console.error('[CHAT] Save error:', err);
         }
+    });
+
+    socket.on('get_player_count', () => {
+        socket.emit('player_count', io.engine.clientsCount);
     });
 });
 

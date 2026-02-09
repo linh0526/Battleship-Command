@@ -58,7 +58,7 @@ export default function CallsignModal({
           animate="visible"
           exit="exit"
           onClick={onClose}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
         >
           <motion.div 
             variants={modalVariants}

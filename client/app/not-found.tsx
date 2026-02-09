@@ -8,7 +8,7 @@ export default function NotFound() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-6 overflow-hidden z-[200]">
       {/* Animated Background Grid */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0" style={{

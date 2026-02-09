@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Bell, User, Languages, Settings, LogOut, CheckCircle, ShieldCheck, Users, History, UserCircle, MessageSquare } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-import { useGame } from '@/context/GameContext';
+import { useGame, GamePhase } from '@/context/GameContext';
 import { useAuth, useToast } from '@/context/AuthContext';
 import SettingsModal from '@/components/settings/SettingsModal';
 import AuthModal from '@/components/auth/AuthModal';
@@ -28,7 +28,13 @@ export default function Header() {
   };
 
   // Hide header in battle or during placement
-  if (pathname === '/battle' || pathname === '/placement') return null;
+  if (
+    pathname === '/battle' || 
+    pathname === '/placement' || 
+    gameState.gameStatus === GamePhase.PLACEMENT || 
+    gameState.gameStatus === GamePhase.PLAYING || 
+    gameState.gameStatus === GamePhase.ENDED
+  ) return null;
 
   return (
     <>
