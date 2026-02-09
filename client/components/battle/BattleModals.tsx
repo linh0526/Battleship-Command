@@ -108,6 +108,7 @@ export default function BattleModals({
     <AnimatePresence>
       {showTurnNotify && (
         <motion.div 
+          key="turn-notification"
           initial={{ x: '-100%' }}
           animate={{ x: ['-100%', '0%', '0%', '100%'] }}
           transition={{ duration: 2.5, times: [0, 0.2, 0.8, 1], ease: "easeInOut" }}
@@ -152,6 +153,7 @@ export default function BattleModals({
       {/* WAITING FOR OPPONENT OVERLAY */}
       {gameStatus === GamePhase.WAITING && (
         <motion.div 
+          key="waiting-overlay"
           variants={overlayVariants}
           initial="hidden"
           animate="visible"
@@ -187,6 +189,7 @@ export default function BattleModals({
 
       {gameResult && (
         <motion.div 
+          key="game-result-overlay"
           variants={overlayVariants}
           initial="hidden"
           animate="visible"
@@ -322,7 +325,7 @@ export default function BattleModals({
 
 
       {showOpponentLeftModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <div key="opponent-left-modal" className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           <motion.div 
             variants={overlayVariants}
             initial="hidden"
@@ -371,7 +374,7 @@ export default function BattleModals({
       )}
 
       {showAbortModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <div key="abort-game-modal" className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           <motion.div 
             variants={overlayVariants}
             initial="hidden"

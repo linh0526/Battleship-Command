@@ -51,7 +51,7 @@ export default function PlacementModals({
     <AnimatePresence>
       {/* ABORT CONFIRMATION MODAL */}
       {showAbortModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <div key="abort-modal-container" className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           <motion.div 
             variants={overlayVariants}
             initial="hidden"
@@ -101,7 +101,7 @@ export default function PlacementModals({
 
       {/* OPPONENT LEFT MODAL */}
       {showOpponentLeftModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <div key="opponent-left-modal-container" className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           <motion.div 
             variants={overlayVariants}
             initial="hidden"

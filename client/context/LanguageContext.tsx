@@ -28,11 +28,11 @@ const translations = {
     manual_components_title: 'Operational Assets',
     manual_ocean_grid: 'Ocean Grid: Tactical deployment of your own fleet.',
     manual_target_grid: 'Target Grid: Intelligence gathering on enemy positions.',
-    manual_peg_red: 'Red Hub: Confirmed hit on enemy vessel.',
+    manual_peg_red: 'Red Hub: Confirmed hit on enemy ship.',
     manual_peg_white: 'White Hub: Projectile miss, water impact.',
     
     manual_fleet_title: 'Fleet Composition',
-    manual_fleet_desc: 'Every commander manages 5 specialized vessels with varying tactical signatures:',
+    manual_fleet_desc: 'Every commander manages 5 specialized ships with varying tactical signatures:',
     manual_ship_carrier: 'Carrier',
     manual_ship_battleship: 'Battleship',
     manual_ship_cruiser: 'Cruiser',
@@ -59,13 +59,13 @@ const translations = {
     manual_turn_process: 'Turn Protocol: Choose target -> Observe impact -> Update intelligence.',
     
     manual_sinking_title: 'Unit Elimination',
-    manual_sinking_desc: 'When all modular sectors of a vessel are compromised, the unit is declared neutralized. Tradition dictates the signal: "You sank my battleship!"',
+    manual_sinking_desc: 'When all modular sectors of a ship are compromised, the unit is declared neutralized. Tradition dictates the signal: "You sank my battleship!"',
     
     manual_victory_title: 'Victory Condition',
     manual_victory_desc: 'Eliminate all 5 hostile units in the sector to achieve total victory.',
     
     step_1: 'PHASE 1: FLEET DEPLOYMENT',
-    step_1_desc: 'Deploy your vessels across the 10x10 tactical grid. Ensure strategic positioning to minimize detection.',
+    step_1_desc: 'Deploy your ships across the 10x10 tactical grid. Ensure strategic positioning to minimize detection.',
     step_2: 'PHASE 2: TARGET ACQUISITION',
     step_2_desc: 'Engage enemy sectors. One shot per turn. Direct hits allow for consecutive strikes.',
     step_3: 'PHASE 3: TOTAL ELIMINATION',
@@ -115,7 +115,7 @@ const translations = {
     
     // Placement
     unit_deployment: 'UNIT DEPLOYMENT',
-    vessel_manifest: 'Vessel Manifest',
+    ship_manifest: 'Ship Manifest',
     init_fleet: 'Initialize Fleet',
     tactical_tools: 'Tactical Tools',
     rotate_ship: 'Rotate Ship',
@@ -164,7 +164,7 @@ const translations = {
     instruction_2: 'Left-click on the grid to place the ship.',
     instruction_3: 'Press \'R\' to change orientation.',
     instruction_4: 'You can Clear Fleet or Auto-deploy for quick setup.',
-    instruction_5: 'Deployment requires all 5 vessels to initiate.',
+    instruction_5: 'Deployment requires all 5 ships to initiate.',
     
     // Battle
     battle_arena: 'BATTLE ARENA',
@@ -212,6 +212,9 @@ const translations = {
     enemy_go_first: 'ENEMY GO FIRST',
     your_fleet_status: 'Your Fleet Status',
     enemy_fleet_status: 'Enemy Fleet Status',
+    neutralized: 'NEUTRALIZED',
+    ko: 'KO',
+    ship: 'Ship',
 
     // Battle Logs
     log_auto_fire: 'COMMANDER INACTIVE. AUTO-FIRE INITIATED.',
@@ -456,7 +459,7 @@ const translations = {
     
     // Placement
     unit_deployment: 'TRIỂN KHAI ĐƠN VỊ',
-    vessel_manifest: 'Danh Mục Hạm Đội',
+    ship_manifest: 'Danh Mục Hạm Đội',
     init_fleet: 'Khởi Tạo Hạm Đội',
     tactical_tools: 'Công Cụ Chiến Thuật',
     rotate_ship: 'Xoay Tàu',
@@ -553,6 +556,9 @@ const translations = {
     enemy_go_first: 'ĐỐI THỦ ĐI TRƯỚC',
     your_fleet_status: 'Trạng Thái Hạm Đội',
     enemy_fleet_status: 'Trạng Thái Địch',
+    neutralized: 'VÔ HIỆU HÓA',
+    ko: 'HỎNG',
+    ship: 'Tàu',
 
     // Battle Logs
     log_auto_fire: 'CHỈ HUY KHÔNG PHẢN HỒI. TỰ ĐỘNG KHAI HỎA.',

@@ -30,7 +30,7 @@ export default function ShipManifest({
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-3 text-white">
            <Ship className="w-4 h-4 text-primary" />
-           {t('vessel_manifest')}
+           {t('ship_manifest')}
         </h3>
         <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">{placedShips.length} / 5 {t('units_placed_lbl')}</span>
       </div>

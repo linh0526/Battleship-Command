@@ -700,6 +700,7 @@ export function BattleContent() {
   return (
     <div className="fixed inset-0 bg-transparent overflow-hidden flex items-center justify-center px-6 lg:px-10 py-0">
       <BattleModals 
+        key="battle-modals-system"
         showTurnNotify={showTurnNotify}
         setShowTurnNotify={setShowTurnNotify}
         currentTurn={gameState.currentTurn}
@@ -815,7 +816,7 @@ export function BattleContent() {
             </section>
 
             {/* RIGHT: DEFENSIVE & LOGISTICS */}
-            <section className="flex flex-col gap-4 md:gap-6 min-h-0 lg:col-span-4 pb-4 lg:pb-0">
+            <section className="flex flex-col gap-4 md:gap-6 min-h-0 lg:col-span-4 pb-4 lg:pb-0 lg:h-full lg:overflow-hidden">
                <FleetStatusPanel 
                    playerFleet={(gameState.currentTurn === 'player' || gameState.gameMode === 'PvE') ? gameState.playerFleet : aiFleet}
                    enemyShots={(gameState.currentTurn === 'player' || gameState.gameMode === 'PvE') ? enemyShots : playerShots}
@@ -825,7 +826,10 @@ export function BattleContent() {
                />
                <BattleStatusPanel 
                    playerFleet={gameState.playerFleet}
-                   enemyFleet={gameState.gameMode === 'PvE' ? aiFleet : [
+                   enemyFleet={gameState.gameMode === 'PvE' ? aiFleet.map((s, i) => {
+                     const isSunk = revealedEnemyShips.some(rs => rs.id === s.id);
+                     return isSunk ? s : { ...s, isUnknown: true };
+                   }) : [
                      ...revealedEnemyShips,
                      ...Array.from({ length: Math.max(0, 5 - revealedEnemyShips.length) }).map((_, i) => ({ id: `unknown-${i}`, name: 'Scanning...', size: 3, isUnknown: true }))
                    ]}
