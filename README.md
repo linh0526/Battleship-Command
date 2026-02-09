@@ -30,7 +30,7 @@
     * Giao diện **Dark Mode** hiện đại, huyền bí.
     * Hiệu ứng chuyển động mượt mà với Framer Motion.
     * Hỗ trợ rung (Haptic feedback) và âm thanh chiến đấu sống động.
-* **📱 Responsive**: Tối ưu hoàn hảo cho cả PC và Mobile.
+* ** Responsive**: Tối ưu hoàn hảo cho cả PC và Mobile.
 
 
 ## Star History
