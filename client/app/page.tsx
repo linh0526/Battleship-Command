@@ -12,7 +12,6 @@ import CallsignModal from '@/components/lobby/CallsignModal';
 import MatchingModal from '@/components/lobby/MatchingModal';
 import LobbyHero from '@/components/lobby/LobbyHero';
 import ActiveOperations from '@/components/lobby/ActiveOperations';
-import TopCommanders from '@/components/lobby/TopCommanders';
 import LobbyChat from '@/components/lobby/LobbyChat';
 import ConnectionOverlay from '@/components/lobby/ConnectionOverlay';
 import GlobalLoading from '@/components/layout/GlobalLoading';
@@ -304,7 +303,7 @@ function LobbyContent() {
 
 
   return (
-    <div className="flex flex-col gap-10 w-full mt-6 pb-20">
+    <div className="flex flex-col gap-2 w-full mt-0">
       {!isInitialLoad && !isConnected && (
         <ConnectionOverlay />
       )}
@@ -327,35 +326,31 @@ function LobbyContent() {
         onClose={() => setShowMatchingModal(false)}
       />
 
-      {/* TOP SECTION: Hero & Leaderboard */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 w-full">
-        <div className="lg:col-span-9">
+      {/* LOBBY CONTENT CONTAINER: Optimized for Single-Frame Experience */}
+      <div className="flex flex-col lg:flex-row gap-4 w-full lg:h-[calc(100vh-110px)] mt-0 pb-2 overflow-hidden">
+        
+        {/* LEFT COLUMN: PRIMARY CONTENT (Hero + Operations) */}
+        <div className="flex-1 flex flex-col gap-4 min-h-0">
           <LobbyHero 
             onStartPvP={handleStartPvP}
             onStartPvE={handleStartPvE}
             onCreateRoom={handleCreateRoom}
             t={t}
           />
-        </div>
-        
-        <div className="lg:col-span-3 flex flex-col">
-          <TopCommanders t={t} />
-        </div>
-
-        {/* ROW 2: Active Ops & Chat */}
-        <div className="lg:col-span-8 flex flex-col">
-          <ActiveOperations 
-            activeRooms={activeRooms}
-            isConnected={isConnected}
-            onJoinRoom={handleJoinRequested}
-            t={t}
-          />
-        </div>
-        
-        <div className="lg:col-span-4 flex flex-col">
-          <LobbyChat onlineUsers={onlineUsers} t={t} />
+          
+          <div className="flex-1 min-h-0 bg-slate-900/5 rounded-2xl border border-white/5">
+            <ActiveOperations 
+              activeRooms={activeRooms}
+              isConnected={isConnected}
+              onJoinRoom={handleJoinRequested}
+              t={t}
+            />
+          </div>
         </div>
       </div>
+      
+      {/* Floating Chat */}
+      <LobbyChat onlineUsers={onlineUsers} t={t} />
     </div>
   );
 }

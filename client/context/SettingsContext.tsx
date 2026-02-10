@@ -58,31 +58,31 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   // setBattleLayout is now removed as it is hardcoded to 'tactical'
 
-  const setBackgroundMode = (mode: BackgroundMode) => {
+  const setBackgroundMode = React.useCallback((mode: BackgroundMode) => {
     setBackgroundModeState(mode);
     localStorage.setItem('backgroundMode', mode);
-  };
+  }, []);
 
-  const setEnableSound = (enabled: boolean) => {
+  const setEnableSound = React.useCallback((enabled: boolean) => {
     setEnableSoundState(enabled);
     localStorage.setItem('enableSound', String(enabled));
-  };
+  }, []);
 
-  const setEnableVibration = (enabled: boolean) => {
+  const setEnableVibration = React.useCallback((enabled: boolean) => {
     setEnableVibrationState(enabled);
     localStorage.setItem('enableVibration', String(enabled));
-  };
+  }, []);
 
-  // setHealthBarStyle is now removed as it is hardcoded to 'modern'
+  const contextValue = React.useMemo(() => ({
+    battleLayout,
+    backgroundMode, setBackgroundMode,
+    enableSound, setEnableSound,
+    enableVibration, setEnableVibration,
+    healthBarStyle
+  }), [backgroundMode, setBackgroundMode, enableSound, setEnableSound, enableVibration, setEnableVibration]);
 
   return (
-    <SettingsContext.Provider value={{ 
-      battleLayout,
-      backgroundMode, setBackgroundMode,
-      enableSound, setEnableSound,
-      enableVibration, setEnableVibration,
-      healthBarStyle
-    }}>
+    <SettingsContext.Provider value={contextValue}>
       {children}
     </SettingsContext.Provider>
   );

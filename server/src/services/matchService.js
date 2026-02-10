@@ -1,6 +1,7 @@
 const MatchHistory = require('../models/MatchHistory');
 const Profile = require('../models/Profile');
 const User = require('../models/User');
+const { checkAchievements } = require('./achievementService');
 
 /**
  * Lưu match history và cập nhật profile stats
@@ -9,8 +10,8 @@ const User = require('../models/User');
 async function saveMatchAndUpdateProfiles(matchData) {
     const { 
         roomId, 
-        players, // [{ userId, name, shots: { total, hit }, result }]
-        mode, // 'PvP' or 'PvE'
+        players, 
+        mode, 
         duration,
         endReason 
     } = matchData;
@@ -31,7 +32,7 @@ async function saveMatchAndUpdateProfiles(matchData) {
                 userId: player.userId,
                 opponentId: opponent?.userId || null,
                 opponentName: opponent?.name || 'AI',
-                result: player.result, // 'win', 'loss', 'draw'
+                result: player.result,
                 mode,
                 shots: {
                     player: {
@@ -58,7 +59,7 @@ async function saveMatchAndUpdateProfiles(matchData) {
         const profilePromises = players.map(async (player) => {
             if (!player.userId) return; // Skip guest players
 
-            await updatePlayerProfile(player, mode);
+            await updatePlayerProfile(player, mode, duration);
         });
 
         await Promise.all(profilePromises);
@@ -70,11 +71,8 @@ async function saveMatchAndUpdateProfiles(matchData) {
     }
 }
 
-/**
- * Cập nhật profile stats SAU KHI lưu match
- */
-async function updatePlayerProfile(playerData, mode) {
-    const { userId, shots, result } = playerData;
+async function updatePlayerProfile(playerData, mode, duration) {
+    const { userId, shots, result, shipsSunk } = playerData;
 
     try {
         // Tìm hoặc tạo profile
@@ -86,6 +84,10 @@ async function updatePlayerProfile(playerData, mode) {
                 stats: {
                     pvp: { matches: 0, wins: 0, losses: 0, draws: 0, shots: { total: 0, hit: 0 }, accuracy: 0, avgShotsPerMatch: 0 },
                     pve: { matches: 0, wins: 0, losses: 0, shots: { total: 0, hit: 0 }, accuracy: 0, avgShotsPerMatch: 0 }
+                },
+                achievements: {
+                    matchesPlayed: 0, matchesWon: 0, totalShots: 0, hitShots: 0, 
+                    shipsDestroyed: 0, winStreak: 0, lossStreak: 0, unlocked: []
                 }
             });
         }
@@ -94,27 +96,58 @@ async function updatePlayerProfile(playerData, mode) {
         const statsKey = mode === 'PvP' ? 'pvp' : 'pve';
         const stats = profile.stats[statsKey];
 
-        // Cập nhật matches
+        // Cập nhật stats cơ bản
         stats.matches += 1;
-
-        // Cập nhật win/loss/draw
         if (result === 'win') stats.wins += 1;
         else if (result === 'loss') stats.losses += 1;
         else if (result === 'draw') stats.draws += 1;
 
-        // Cập nhật shots
         stats.shots.total += shots.total;
         stats.shots.hit += shots.hit;
 
-        // Tính toán accuracy (cached)
         stats.accuracy = stats.shots.total > 0 
             ? Math.round((stats.shots.hit / stats.shots.total) * 100) 
             : 0;
 
-        // Tính toán avg shots per match
         stats.avgShotsPerMatch = stats.matches > 0
             ? Math.round(stats.shots.total / stats.matches)
             : 0;
+
+        // Cập nhật Achievements Stats
+        if (!profile.achievements) {
+             profile.achievements = {
+                matchesPlayed: 0, matchesWon: 0, totalShots: 0, hitShots: 0, 
+                shipsDestroyed: 0, winStreak: 0, lossStreak: 0, unlocked: []
+            };
+        }
+        
+        profile.achievements.matchesPlayed += 1;
+        if (result === 'win') {
+            profile.achievements.matchesWon += 1;
+            profile.achievements.winStreak += 1;
+            profile.achievements.lossStreak = 0;
+        } else if (result === 'loss') {
+            profile.achievements.lossStreak += 1;
+            profile.achievements.winStreak = 0;
+        }
+        
+        profile.achievements.totalShots += shots.total;
+        profile.achievements.hitShots += shots.hit;
+        profile.achievements.shipsDestroyed += (shipsSunk || 0);
+
+        // Check Unlock Achievements
+        const matchDataForAch = {
+            result,
+            shots,
+            accuracy: shots.total > 0 ? (shots.hit / shots.total) * 100 : 0,
+            shipsSunk: shipsSunk || 0,
+            duration
+        };
+        
+        const newUnlocks = checkAchievements(profile, matchDataForAch);
+        if (newUnlocks.length > 0) {
+            console.log(`[ACHIEVEMENT] Unlocked ${newUnlocks.length} badges for ${userId}`);
+        }
 
         profile.updatedAt = new Date();
         await profile.save();
@@ -126,20 +159,18 @@ async function updatePlayerProfile(playerData, mode) {
     }
 }
 
-/**
- * Lấy stats từ room khi game kết thúc
- */
 function extractMatchDataFromRoom(room, winnerClientId, endReason) {
     const players = room.players.map(player => {
         const isWinner = player.clientId === winnerClientId;
         
         return {
-            userId: player.userId || null, // Có thể null nếu là guest
+            userId: player.userId || null,
             name: player.name,
             shots: {
                 total: player.stats.shots,
                 hit: player.stats.hits
             },
+            shipsSunk: player.stats.shipsSunk || 0,
             result: isWinner ? 'win' : 'loss'
         };
     });

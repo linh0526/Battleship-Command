@@ -354,6 +354,10 @@ const translations = {
     hall_of_valor: 'Hall of Valor',
     share_room: 'Share Room',
     copied: 'Copied!',
+    support_admin: 'Support Admin',
+    coffee_msg: 'Buy Admin a coffee to keep development going! ☕️',
+    coffee_thanks: 'Thank you for being part of Battleship Command.',
+    coffee_status: 'Status: Connected to Coffee Grid',
   },
   vi: {
     // Header
@@ -698,6 +702,10 @@ const translations = {
     hall_of_valor: 'BẢNG VÀNG VINH DANH',
     share_room: 'Chia Sẻ Phòng',
     copied: 'Đã Sao Chép!',
+    support_admin: 'Ủng Hộ Admin',
+    coffee_msg: 'Mời Admin 1 ly coffee tiếp thêm động lực phát triển nhé! ☕️',
+    coffee_thanks: 'Cảm ơn bạn đã đồng hành cùng Battleship Command.',
+    coffee_status: 'Trạng thái: Đã kết nối Hệ thống Coffee',
   }
 };
 

@@ -26,8 +26,11 @@ const connectDB = async () => {
 // Auth Routes
 const authRoutes = require('./src/routes/auth');
 const roomRoutes = require('./src/routes/room');
+const historyRoutes = require('./src/routes/history');
+
 app.use('/api/auth', authRoutes);
 app.use('/api/room', roomRoutes);
+app.use('/api/history', historyRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, {

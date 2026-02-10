@@ -42,6 +42,16 @@ const ProfileSchema = new mongoose.Schema({
             avgShotsPerMatch: { type: Number, default: 0 }
         }
     },
+    achievements: {
+        matchesPlayed: { type: Number, default: 0 },
+        matchesWon: { type: Number, default: 0 },
+        totalShots: { type: Number, default: 0 },
+        hitShots: { type: Number, default: 0 },
+        shipsDestroyed: { type: Number, default: 0 },
+        winStreak: { type: Number, default: 0 },
+        lossStreak: { type: Number, default: 0 },
+        unlocked: [{ type: String }]
+    },
     
     settings: {
         theme: { type: String, default: 'default' },

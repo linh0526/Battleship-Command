@@ -1,6 +1,8 @@
 const { rooms, activePve } = require('../state');
 const { startGame } = require('../gameEngine');
 const { GamePhase } = require('../constants');
+const { createRoom } = require('../factories');
+const { getRoomsList } = require('../utils');
 
 module.exports = (io, socket) => {
     const findRoom = () => {
@@ -76,6 +78,7 @@ module.exports = (io, socket) => {
                     result = 'sunk';
                     sunkShip = hitShip;
                     attacker.stats.score += 50;
+                    attacker.stats.shipsSunk++;
                 }
             } else {
                 attacker.stats.misses++;
@@ -112,6 +115,15 @@ module.exports = (io, socket) => {
                     result: 'VICTORY',
                     type: 'sys'
                 });
+
+                // Save Match History & Update Stats
+                const { saveMatchAndUpdateProfiles, extractMatchDataFromRoom } = require('../services/matchService');
+                const matchData = extractMatchDataFromRoom(room, socket.clientId, 'VICTORY');
+                
+                saveMatchAndUpdateProfiles(matchData).catch(err => {
+                    console.error('[GAME] Failed to save match history:', err);
+                });
+
             } else if (result === 'miss') {
                 room.turn = opponent.clientId;
                 io.to(roomId).emit('turn_change', { turn: opponent.clientId });
@@ -152,16 +164,66 @@ module.exports = (io, socket) => {
     });
 
     socket.on('rematch_accept', () => {
-        const { roomId, room } = findRoom();
-        if (roomId && room) {
-            room.phase = GamePhase.WAITING;
-            room.turn = null;
-            room.players.forEach(p => {
+        const { roomId: oldRoomId, room: oldRoom } = findRoom();
+        if (oldRoomId && oldRoom) {
+            const players = [...oldRoom.players];
+            
+            // 1. Generate new Room ID
+            let newRoomId;
+            do {
+                newRoomId = Math.floor(1000 + Math.random() * 9000).toString();
+            } while (rooms.has(newRoomId));
+
+            // 2. Prepare players for new room
+            players.forEach(p => {
                 p.ready = false;
                 p.roomReady = false;
                 p.shotsReceived = new Set();
+                p.stats = { shots: 0, hits: 0, misses: 0, score: 0 };
             });
-            io.to(roomId).emit('rematch_started');
+
+            // 3. Create new room
+            const newRoom = createRoom({ 
+                roomId: newRoomId, 
+                players, 
+                mode: oldRoom.mode 
+            });
+            rooms.set(newRoomId, newRoom);
+
+            // 4. Move sockets to new room
+            players.forEach(p => {
+                const s = io.sockets.sockets.get(p.socketId);
+                if (s) {
+                    s.leave(oldRoomId);
+                    s.join(newRoomId);
+                }
+            });
+
+            // 5. Notify both players about the rematch starting (to clear state)
+            io.to(oldRoomId).emit('rematch_started');
+
+            // 6. Notify both players about the new room
+            players.forEach(p => {
+                const opponent = players.find(opp => opp.clientId !== p.clientId);
+                const opponentInfo = opponent ? { 
+                    name: opponent.name, 
+                    fleetReady: false, 
+                    roomReady: false, 
+                    status: opponent.status 
+                } : null;
+
+                io.to(p.socketId).emit('room_joined', { 
+                    roomId: newRoomId, 
+                    opponent: opponentInfo, 
+                    mode: newRoom.mode 
+                });
+            });
+
+            // 7. Destroy old room
+            rooms.delete(oldRoomId);
+
+            io.emit('rooms_update', getRoomsList());
+            console.log(`[REMATCH] Managed transition: Old ${oldRoomId} -> New ${newRoomId}`);
         }
     });
 

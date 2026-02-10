@@ -199,47 +199,47 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                 <div className="space-y-3">
                    {/* Sound Toggle */}
-                   <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/40 border border-white/5 hover:border-white/10 transition-colors">
+                   <div 
+                     onClick={() => setEnableSound(!enableSound)}
+                     className="flex items-center justify-between p-4 rounded-xl bg-slate-900/40 border border-white/5 hover:border-white/10 transition-colors cursor-pointer group/row"
+                   >
                       <div className="flex items-center gap-4">
                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${enableSound ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-800 text-slate-500'}`}>
                             <Volume2 className="w-5 h-5" />
                          </div>
                          <div>
-                            <h4 className="text-xs font-black text-slate-300 uppercase tracking-wide">{t('settings_sound')}</h4>
+                            <h4 className="text-xs font-black text-slate-300 uppercase tracking-wide group-hover/row:text-white transition-colors">{t('settings_sound')}</h4>
                             <p className="text-[10px] text-slate-500 uppercase tracking-tight font-bold">{t('settings_sound_desc')}</p>
                          </div>
                       </div>
-                      <button 
-                        onClick={() => setEnableSound(!enableSound)}
-                        className={`w-12 h-6 rounded-full relative transition-colors duration-300 pointer-events-auto ${enableSound ? 'bg-primary' : 'bg-slate-800'}`}
-                      >
+                      <div className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${enableSound ? 'bg-primary' : 'bg-slate-800'}`}>
                         <motion.div 
                           animate={{ x: enableSound ? 24 : 4 }}
                           className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-lg"
                         />
-                      </button>
+                      </div>
                    </div>
 
                    {/* Vibration Toggle */}
-                   <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/40 border border-white/5 hover:border-white/10 transition-colors">
+                   <div 
+                     onClick={() => setEnableVibration(!enableVibration)}
+                     className="flex items-center justify-between p-4 rounded-xl bg-slate-900/40 border border-white/5 hover:border-white/10 transition-colors cursor-pointer group/row"
+                   >
                       <div className="flex items-center gap-4">
                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${enableVibration ? 'bg-amber-500/10 text-amber-500' : 'bg-slate-800 text-slate-500'}`}>
                             <Radio className="w-5 h-5" />
                          </div>
                          <div>
-                            <h4 className="text-xs font-black text-slate-300 uppercase tracking-wide">{t('settings_vibration')}</h4>
+                            <h4 className="text-xs font-black text-slate-300 uppercase tracking-wide group-hover/row:text-white transition-colors">{t('settings_vibration')}</h4>
                             <p className="text-[10px] text-slate-500 uppercase tracking-tight font-bold">{t('settings_vibration_desc')}</p>
                          </div>
                       </div>
-                      <button 
-                        onClick={() => setEnableVibration(!enableVibration)}
-                        className={`w-12 h-6 rounded-full relative transition-colors duration-300 pointer-events-auto ${enableVibration ? 'bg-primary' : 'bg-slate-800'}`}
-                      >
+                      <div className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${enableVibration ? 'bg-primary' : 'bg-slate-800'}`}>
                         <motion.div 
                           animate={{ x: enableVibration ? 24 : 4 }}
                           className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-lg"
                         />
-                      </button>
+                      </div>
                    </div>
                 </div>
               </section>

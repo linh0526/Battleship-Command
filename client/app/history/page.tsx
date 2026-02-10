@@ -5,16 +5,42 @@ import { useLanguage } from '@/context/LanguageContext';
 import { History, Swords, Trophy, Target, Clock, Shield, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const DUMMY_HISTORY = [
-  { id: 1, opponent: 'KrakenHunter99', outcome: 'VICTORY', score: '5-2', date: '2024-02-08 14:20', mode: 'Classic' },
-  { id: 2, opponent: 'GhostFleet', outcome: 'DEFEAT', score: '3-5', date: '2024-02-08 12:45', mode: 'Salvo' },
-  { id: 3, opponent: 'NeonEagle', outcome: 'VICTORY', score: '5-0', date: '2024-02-07 20:15', mode: 'Classic' },
-  { id: 4, opponent: 'ShadowCommander', outcome: 'VICTORY', score: '5-4', date: '2024-02-07 18:30', mode: 'Classic' },
-  { id: 5, opponent: 'StormBreaker', outcome: 'DEFEAT', score: '1-5', date: '2024-02-06 22:10', mode: 'Salvo' },
-];
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function HistoryPage() {
   const { t } = useLanguage();
+  const [history, setHistory] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchHistory = async () => {
+        const token = localStorage.getItem('auth-token');
+        if (!token) {
+            setLoading(false);
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/api/history`, {
+                headers: { 'x-auth-token': token }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setHistory(data);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchHistory();
+  }, []);
+  
+  // Calculate win rate from actual history
+  const totalGames = history.length;
+  const wins = history.filter(m => m.result === 'win').length;
+  const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
 
   return (
     <div className="flex flex-col gap-8">
@@ -35,16 +61,21 @@ export default function HistoryPage() {
           </div>
 
           <div className="flex gap-4">
-            <StatsCard label="Win Rate" value="60%" icon={<Trophy className="w-4 h-4 text-amber-500" />} color="amber" />
-            <StatsCard label="Total Battles" value="42" icon={<Swords className="w-4 h-4 text-primary" />} color="primary" />
+            <StatsCard label="Win Rate" value={`${winRate}%`} icon={<Trophy className="w-4 h-4 text-amber-500" />} color="amber" />
+            <StatsCard label="Total Battles" value={totalGames.toString()} icon={<Swords className="w-4 h-4 text-primary" />} color="primary" />
           </div>
         </div>
 
         {/* History List */}
         <div className="grid gap-4">
-          {DUMMY_HISTORY.map((match, index) => (
+          {loading ? (
+             <div className="p-8 text-center text-slate-500 font-mono text-sm">LOADING COMM LINK...</div>
+          ) : history.length === 0 ? (
+             <div className="p-8 text-center text-slate-500 font-mono text-sm">NO COMBAT RECORDS FOUND</div>
+          ) : (
+            history.map((match, index) => (
             <motion.div
-              key={match.id}
+              key={match._id || index}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
@@ -55,19 +86,19 @@ export default function HistoryPage() {
               <div className="relative p-6 flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="flex items-center gap-6 w-full md:w-auto">
                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border ${
-                        match.outcome === 'VICTORY' 
+                        match.result === 'win' 
                         ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.1)]' 
                         : 'bg-error/10 border-error/20 text-error shadow-[0_0_20px_rgba(239,68,68,0.1)]'
                     }`}>
-                        {match.outcome === 'VICTORY' ? <Trophy className="w-7 h-7" /> : <Shield className="w-7 h-7" />}
+                        {match.result === 'win' ? <Trophy className="w-7 h-7" /> : <Shield className="w-7 h-7" />}
                     </div>
 
                     <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
                             <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${
-                                match.outcome === 'VICTORY' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-error/20 text-error'
+                                match.result === 'win' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-error/20 text-error'
                             }`}>
-                                {match.outcome}
+                                {match.result === 'win' ? 'VICTORY' : 'DEFEAT'}
                             </span>
                             <span className="text-slate-600">/</span>
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
@@ -75,7 +106,7 @@ export default function HistoryPage() {
                             </span>
                         </div>
                         <h3 className="text-lg font-black text-white uppercase tracking-tight">
-                            VS {match.opponent}
+                            VS {match.opponentName || 'Unknown'}
                         </h3>
                     </div>
                 </div>
@@ -84,7 +115,7 @@ export default function HistoryPage() {
                     <div className="flex flex-col items-center md:items-end gap-1">
                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Score</span>
                         <span className="text-xl font-black text-white font-mono tracking-tighter">
-                            {match.score}
+                            {match.shots?.player?.hit || 0}-{match.shots?.opponent?.hit || 0}
                         </span>
                     </div>
 
@@ -92,7 +123,7 @@ export default function HistoryPage() {
                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Date</span>
                         <div className="flex items-center gap-2 text-slate-400 font-bold text-xs">
                             <Clock className="w-3 h-3" />
-                            {match.date}
+                            {new Date(match.endedAt).toLocaleDateString()}
                         </div>
                     </div>
 
@@ -102,7 +133,7 @@ export default function HistoryPage() {
                 </div>
               </div>
             </motion.div>
-          ))}
+          )))}
         </div>
     </div>
   );

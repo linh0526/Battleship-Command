@@ -6,10 +6,97 @@ import { useLanguage } from '@/context/LanguageContext';
 import { User, Shield, Trophy, Target, Zap, Waves, Settings, Award, Star, Ship } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+const ACHIEVEMENT_DATA: Record<string, { title: string; desc: string; icon: any }> = {
+    // 1. Matches Played
+    'ROOKIE': { title: 'Tân binh biển cả', desc: 'Chơi 1 trận', icon: <Ship /> },
+    'SKIRMISHER': { title: 'Làm quen chiến trường', desc: 'Chơi 5 trận', icon: <Ship /> },
+    'SAILOR': { title: 'Thủy thủ chính hiệu', desc: 'Chơi 10 trận', icon: <Ship /> },
+    'VETERAN': { title: 'Lão làng đại dương', desc: 'Chơi 50 trận', icon: <Ship /> },
+    'LEGEND': { title: 'Huyền thoại Battleship', desc: 'Chơi 100 trận', icon: <Ship /> },
+
+    // 2. Matches Won
+    'FIRST_VICTORY': { title: 'Chiến thắng đầu tiên', desc: 'Thắng 1 trận', icon: <Trophy /> },
+    'CAPTAIN': { title: 'Thuyền trưởng', desc: 'Thắng 5 trận', icon: <Trophy /> },
+    'ADMIRAL': { title: 'Đô đốc', desc: 'Thắng 10 trận', icon: <Trophy /> },
+    'INVINCIBLE': { title: 'Bất khả chiến bại', desc: 'Thắng 25 trận', icon: <Trophy /> },
+    'SEA_RULER': { title: 'Thống trị đại dương', desc: 'Thắng 50 trận', icon: <Trophy /> },
+
+    // 3. Total Shots
+    'OPEN_FIRE': { title: 'Khai hỏa', desc: 'Bắn 10 phát', icon: <Target /> },
+    'GUNNER_TRAINEE': { title: 'Xạ thủ tập sự', desc: 'Bắn 50 phát', icon: <Target /> },
+    'CANNONEER': { title: 'Pháo thủ', desc: 'Bắn 100 phát', icon: <Target /> },
+    'RAIN_OF_FIRE': { title: 'Mưa đạn', desc: 'Bắn 500 phát', icon: <Target /> },
+    'FIRESTORM': { title: 'Bão lửa', desc: 'Bắn 1000 phát', icon: <Target /> },
+
+    // 4. Hit Shots
+    'FIRST_HIT': { title: 'Trúng rồi', desc: 'Trúng 1 phát', icon: <Zap /> },
+    'SHARP_NOSE': { title: 'Đánh hơi tốt', desc: 'Trúng 10 phát', icon: <Zap /> },
+    'SEA_ASSASSIN': { title: 'Sát thủ biển khơi', desc: 'Trúng 50 phát', icon: <Zap /> },
+    'LIVING_RADAR': { title: 'Máy quét sống', desc: 'Trúng 200 phát', icon: <Zap /> },
+
+    // 5. Ships Destroyed
+    'SINKER': { title: 'Chìm rồi', desc: 'Đánh chìm 1 tàu', icon: <Waves /> },
+    'SHIP_HUNTER': { title: 'Kẻ săn tàu', desc: 'Đánh chìm 5 tàu', icon: <Waves /> },
+    'DESTROYER': { title: 'Kẻ hủy diệt', desc: 'Đánh chìm 20 tàu', icon: <Waves /> },
+    'SEA_NIGHTMARE': { title: 'Ác mộng đại dương', desc: 'Đánh chìm 50 tàu', icon: <Waves /> },
+
+    // 6. Win Streak
+    'WIN_STREAK_3': { title: 'Chuỗi chiến thắng', desc: 'Thắng liên tiếp 3 trận', icon: <Award /> },
+    'WIN_STREAK_5': { title: 'Không thể cản phá', desc: 'Thắng liên tiếp 5 trận', icon: <Award /> },
+    'WAR_GOD': { title: 'Thần chiến tranh', desc: 'Thắng liên tiếp 10 trận', icon: <Award /> },
+
+    // 7. Special
+    'SALTY': { title: 'Cay cú', desc: 'Thua 5 trận liên tiếp', icon: <User /> },
+    'GUESSING_MASTER': { title: 'Cao thủ đoán mò', desc: 'Thắng khi chính xác < 30%', icon: <Target /> },
+    'BLITZKRIEG': { title: 'Đánh nhanh thắng gọn', desc: 'Thắng dưới 20 lượt bắn', icon: <Zap /> },
+};
+
 export default function ProfilePage() {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const [profile, setProfile] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
 
+  React.useEffect(() => {
+    const fetchProfile = async () => {
+        const token = localStorage.getItem('auth-token');
+        if (!token) {
+            setLoading(false);
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/api/auth/me`, {
+                headers: { 'x-auth-token': token }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setProfile(data.profile); // User model has populate('profile')
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchProfile();
+  }, []);
+
+  const stats = profile?.stats?.pvp || {};
+  const ach = profile?.achievements || {};
+  const unlockedIds = ach.unlocked || [];
+  
+  // Calculate display values
+  const totalMatches = stats.matches || 0;
+  const winRate = totalMatches > 0 ? ((stats.wins / totalMatches) * 100).toFixed(1) : 0;
+  const rank = stats.wins >= 50 ? 'Thống trị đại dương' : 
+               stats.wins >= 25 ? 'Bất khả chiến bại' : 
+               stats.wins >= 10 ? 'Đô đốc' : 
+               stats.wins >= 5 ? 'Thuyền trưởng' : 
+               stats.wins >= 1 ? 'Chiến thắng đầu tiên' : 'Tân binh';
+               
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 h-full pb-6 overflow-hidden">
         
@@ -35,18 +122,18 @@ export default function ProfilePage() {
                 {user?.username}
             </h2>
             <p className="text-primary font-black uppercase tracking-[0.3em] text-[10px] mb-8">
-                Fleet Admiral • Level 42
+                {rank} • Wins: {stats.wins || 0}
             </p>
 
             <div className="grid grid-cols-2 gap-4 w-full">
-                <MiniStat label="Matches" value="2,482" />
-                <MiniStat label="Win Ratio" value="68.4%" />
+                <MiniStat label="Matches" value={totalMatches.toString()} />
+                <MiniStat label="Win Ratio" value={`${winRate}%`} />
             </div>
 
             <div className="w-full mt-6 p-4 bg-slate-900/50 border border-white/5 rounded-2xl flex flex-col gap-2 text-left">
-                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Current Status</span>
-                <p className="text-[11px] font-bold text-white leading-relaxed italic">
-                    "Patrolling the Okhotsk sector. Sonar readings are stable."
+                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Achievements Unlocked</span>
+                <p className="text-[14px] font-bold text-white leading-relaxed font-mono">
+                    {unlockedIds.length} / {Object.keys(ACHIEVEMENT_DATA).length}
                 </p>
             </div>
 
@@ -56,16 +143,16 @@ export default function ProfilePage() {
             </button>
           </motion.div>
 
-          {/* Level Progress */}
+          {/* XP Progress (Mocked based on Hits for now) */}
           <div className="bg-[#0a0e1a]/40 border border-white/5 rounded-3xl p-6">
             <div className="flex justify-between items-end mb-3">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Experience Points</span>
-                <span className="text-xs font-black text-white tracking-widest">8,450 / 9,000 XP</span>
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Hits XP</span>
+                <span className="text-xs font-black text-white tracking-widest">{ach.hitShots || 0} XP</span>
             </div>
             <div className="h-3 bg-slate-900 rounded-full overflow-hidden border border-white/5">
                 <motion.div 
                     initial={{ width: 0 }}
-                    animate={{ width: '85%' }}
+                    animate={{ width: `${Math.min((ach.hitShots || 0) / 10, 100)}%` }}
                     className="h-full bg-gradient-to-r from-primary to-blue-400 shadow-[0_0_15px_rgba(25,93,230,0.5)]"
                 />
             </div>
@@ -77,10 +164,10 @@ export default function ProfilePage() {
           
           {/* Detailed Stats Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <BigStat icon={<Target className="text-error" />} label="Accuracy" value="72%" />
-            <BigStat icon={<Zap className="text-amber-500" />} label="Sunk Ships" value="12.4k" />
-            <BigStat icon={<Ship className="text-primary" />} label="Fleet Command" value="Class S" />
-            <BigStat icon={<Trophy className="text-emerald-500" />} label="Medals" value="18" />
+            <BigStat icon={<Target className="text-error" />} label="Accuracy" value={`${stats.accuracy || 0}%`} />
+            <BigStat icon={<Zap className="text-amber-500" />} label="Sunk Ships" value={ach.shipsDestroyed || 0} />
+            <BigStat icon={<Ship className="text-primary" />} label="Total Shots" value={ach.totalShots || 0} />
+            <BigStat icon={<Trophy className="text-emerald-500" />} label="Streak" value={ach.winStreak || 0} />
           </div>
 
           {/* Achievements Section */}
@@ -91,34 +178,21 @@ export default function ProfilePage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <AchievementItem 
-                    title="Legendary Admiral" 
-                    desc="Reached Level 40 in a single season." 
-                    icon={<Star className="w-6 h-6" />}
-                    unlocked={true}
-                />
-                <AchievementItem 
-                    title="Ghost in the Shell" 
-                    desc="Won 50 matches without losing a single ship." 
-                    icon={<Shield className="w-6 h-6" />}
-                    unlocked={true}
-                />
-                <AchievementItem 
-                    title="Kraken Slayer" 
-                    desc="Eliminate 1000 opponent ships in PvP mode." 
-                    icon={<Waves className="w-6 h-6" />}
-                    unlocked={false}
-                />
-                <AchievementItem 
-                    title="Perfect Salvo" 
-                    desc="Sink 3 ships in a single Salvo turn." 
-                    icon={<Zap className="w-6 h-6" />}
-                    unlocked={true}
-                />
+                {Object.entries(ACHIEVEMENT_DATA).map(([id, data]) => {
+                    const isUnlocked = unlockedIds.includes(id);
+                    return (
+                        <AchievementItem 
+                            key={id}
+                            title={data.title} 
+                            desc={data.desc} 
+                            icon={data.icon}
+                            unlocked={isUnlocked}
+                        />
+                    );
+                })}
             </div>
           </div>
         </main>
-
     </div>
   );
 }

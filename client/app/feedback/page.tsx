@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Github, Heart, Mail, CheckCircle } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -16,6 +16,8 @@ interface ContactItemProps {
 
 export default function FeedbackPage() {
   const { t } = useLanguage();
+  
+  const [showQRModal, setShowQRModal] = React.useState(false);
   
   return (
     <div className="min-h-[calc(100vh-200px)] py-12 px-6">
@@ -71,14 +73,22 @@ export default function FeedbackPage() {
                   color="text-white"
                   hoverColor="hover:border-white/20"
                 />
-                <ContactItem 
-                  href="https://buymeacoffee.com"
-                  icon={<Heart className="w-6 h-6" />}
-                  title={t('donate')}
-                  desc={t('donate_desc')}
-                  color="text-rose-400"
-                  hoverColor="hover:border-rose-500/20"
-                />
+                <div 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowQRModal(true);
+                  }}
+                  className="cursor-pointer"
+                >
+                  <ContactItem 
+                    href="#"
+                    icon={<Heart className="w-6 h-6" />}
+                    title={t('donate')}
+                    desc={t('donate_desc')}
+                    color="text-rose-400"
+                    hoverColor="hover:border-rose-500/20"
+                  />
+                </div>
                 <ContactItem 
                   href="mailto:linhngyn0526@gmail.com"
                   icon={<Mail className="w-6 h-6" />}
@@ -103,6 +113,53 @@ export default function FeedbackPage() {
           </motion.div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showQRModal && (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowQRModal(false)}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-sm glass-panel border border-rose-500/30 p-4 bg-slate-900 overflow-hidden"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-rose-500 font-extrabold uppercase text-xs tracking-widest">{t('support_admin')}</h3>
+                <button 
+                  onClick={() => setShowQRModal(false)}
+                  className="w-8 h-8 rounded-lg hover:bg-white/5 flex items-center justify-center text-slate-500 hover:text-white"
+                >
+                  <CheckCircle className="w-4 h-4 rotate-45" />
+                </button>
+              </div>
+              <div className="bg-white rounded-2xl p-4 aspect-square relative overflow-hidden group">
+                <img 
+                  src="/qr.jpg" 
+                  alt="QR Coffee" 
+                  className="w-full h-full object-contain"
+                />
+                <div className="absolute top-0 left-0 w-full h-1 bg-rose-500/50 shadow-[0_0_10px_rgba(244,63,94,0.8)] animate-[scan_3s_ease-in-out_infinite]" />
+              </div>
+              <p className="mt-4 text-center text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+                Cảm ơn bạn đã ủng hộ phát triển trò chơi!
+              </p>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      <style jsx global>{`
+        @keyframes scan {
+          0%, 100% { top: 0% }
+          50% { top: 100% }
+        }
+      `}</style>
     </div>
   );
 }

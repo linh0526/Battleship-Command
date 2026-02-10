@@ -8,6 +8,7 @@ import { Search, Bell, User, Languages, Settings, LogOut, CheckCircle, ShieldChe
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame, GamePhase } from '@/context/GameContext';
 import { useAuth, useToast } from '@/context/AuthContext';
+import { useSocket } from '@/context/SocketContext';
 import SettingsModal from '@/components/settings/SettingsModal';
 import AuthModal from '@/components/auth/AuthModal';
 import styles from './Header.module.css';
@@ -18,8 +19,17 @@ export default function Header() {
   const { gameState } = useGame();
   const { user, isAuthenticated, logout } = useAuth();
   const { show: showToast } = useToast();
+  const { joinSpecificRoom } = useSocket();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearchJoin = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      joinSpecificRoom(searchQuery.trim());
+      setSearchQuery('');
+    }
+  };
 
   // Handle Logout with Notification
   const handleLogout = () => {
@@ -69,6 +79,9 @@ export default function Header() {
                   type="text" 
                   placeholder={t('search_room')} 
                   className={styles['search-input']}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearchJoin}
                 />
               </div>
 
@@ -105,14 +118,7 @@ export default function Header() {
                              {t('profile')}
                           </Link>
                           
-                          <Link 
-                            href="/friends"
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest"
-                          >
-                             <Users className="w-4 h-4 text-emerald-500" />
-                             {t('friends')}
-                          </Link>
-                          
+
                           <Link 
                             href="/history"
                             className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest"

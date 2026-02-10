@@ -36,7 +36,7 @@ const ActiveOperations = ({
   };
 
   return (
-    <section className="flex flex-col gap-6 w-full h-[500px] p-1">
+    <section className="flex flex-col gap-6 w-full h-full p-1">
       <div className="flex items-center justify-between shrink-0">
         <h2 className="text-lg font-black uppercase tracking-widest flex items-center gap-3 text-white">
           <Globe className="w-5 h-5 text-primary" />
@@ -57,64 +57,57 @@ const ActiveOperations = ({
           <table className="w-full text-xs font-bold uppercase tracking-widest min-w-[800px]">
             <thead className="sticky top-0 bg-slate-900/90 backdrop-blur z-10 border-b border-slate-800">
               <tr className="text-slate-500">
-                <th className="px-6 font-bold py-6">{t('op_name')}</th>
-                <th className="px-6 font-bold py-6">{t('captains')}</th>
-                <th className="px-6 font-bold py-6">{t('game_mode')}</th>
-                <th className="px-6 font-bold py-6">{t('status')}</th>
-                <th className="px-6 font-bold py-6">{t('action')}</th>
+                <th className="px-4 font-bold py-3">{t('op_name')}</th>
+                <th className="px-4 font-bold py-3">{t('captains')}</th>
+                <th className="px-4 font-bold py-3">{t('game_mode')}</th>
+                <th className="px-4 font-bold py-3">{t('status')}</th>
+                <th className="px-4 font-bold py-3">{t('action')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50">
               {activeRooms.length > 0 ? activeRooms.map((op) => (
                 <tr key={op.id} className="hover:bg-primary/5 transition-colors group cursor-pointer border-b border-slate-800/50">
-                  <td className="px-6 py-6 border-r border-slate-800/30">
-                    <div className="text-center">
-                      <p className="text-white text-sm tracking-normal mb-0.5 whitespace-nowrap">{op.name}</p>
-                      <p className="text-slate-500 text-[11px] font-mono leading-none tracking-normal italic">ID: {op.id.substring(0,8)}</p>
+                  <td className="px-4 py-3 border-r border-slate-800/30">
+                    <div className="text-left">
+                      <p className="text-white text-[13px] tracking-normal mb-0.5 whitespace-nowrap">{op.name}</p>
+                      <p className="text-slate-500 text-[10px] font-mono leading-none tracking-normal italic">ID: {op.id.substring(0,8)}</p>
                     </div>
                   </td>
-                  <td className="px-6 py-6 text-center border-r border-slate-800/30">
-                    <div className="flex items-center justify-center gap-1.5 text-slate-400 tracking-normal">
-                      <User className="w-3 h-3" />
+                  <td className="px-4 py-3 text-center border-r border-slate-800/30">
+                    <div className="flex items-center justify-center gap-1 text-slate-400 tracking-normal text-[11px]">
+                      <User className="w-2.5 h-2.5" />
                       {op.captains}
                     </div>
                   </td>
-                  <td className="px-6 py-6 text-center border-r border-slate-800/30">
-                    <span className={`px-2 py-1 rounded text-[10px] ${op.mode === 'salvo' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
+                  <td className="px-4 py-3 text-center border-r border-slate-800/30">
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] ${op.mode === 'salvo' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
                       {op.mode === 'salvo' ? t('mode_salvo') : t('mode_classic')}
                     </span>
                   </td>
-                  <td className="px-6 py-6 border-r border-slate-800/30">
-                    <div className="flex items-center justify-center gap-2 tracking-normal">
-                      <div className={`w-2 h-2 rounded-full ${op.statusColor} shadow-[0_0_8px_currentColor] animate-pulse`}></div>
+                  <td className="px-4 py-3 border-r border-slate-800/30">
+                    <div className="flex items-center justify-center gap-1.5 tracking-normal text-[11px]">
+                      <div className={`w-1.5 h-1.5 rounded-full ${op.statusColor} shadow-[0_0_8px_currentColor] animate-pulse`}></div>
                       <span className="text-slate-300">
                         {statusLabelMap[op.status] || op.status}
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-6 text-center">
-                      {op.status === 'DANGER' ? (
-                        <span className="text-[10px] font-black text-error uppercase tracking-widest italic animate-pulse">
-                          IMPOSSIBLE
-                        </span>
-                      ) : op.status === 'WAITING' ? (
+                  <td className="px-4 py-3 text-center">
                         <button
-                          disabled={!isConnected}
+                          disabled={!isConnected || op.status !== 'WAITING'}
                           onClick={(e) => {
+                            if (op.status !== 'WAITING') return;
                             e.stopPropagation();
                             onJoinRoom(op.id);
                           }}
-                          className="px-6 py-2 bg-primary/20 hover:bg-primary text-primary hover:text-white border border-primary/30 rounded-lg transition-all font-black disabled:opacity-40 disabled:cursor-not-allowed"
+                          className={`px-4 py-1.5 rounded-lg transition-all font-black text-[11px] ${
+                            op.status === 'WAITING' 
+                            ? 'bg-primary/20 hover:bg-primary text-primary hover:text-white border border-primary/30' 
+                            : 'bg-slate-800/40 text-slate-600 border border-slate-800 cursor-not-allowed opacity-50'
+                          }`}
                         >
-                          {t('join')}
+                          {op.status === 'WAITING' ? t('join') : t('room_full')}
                         </button>
-                      ) : (
-                        <div className="flex flex-col items-center opacity-40">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] italic">
-                            {t('room_full')}
-                          </span>
-                        </div>
-                      )}
                   </td>
                 </tr>
               )) : (

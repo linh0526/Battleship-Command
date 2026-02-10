@@ -5,6 +5,7 @@ import { io, Socket } from 'socket.io-client';
 import { useGame, GamePhase } from './GameContext';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useLanguage } from './LanguageContext';
+import { useAuth, useToast } from './AuthContext';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -35,12 +36,11 @@ const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
 
-import { useAuth, useToast } from './AuthContext';
-
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useLanguage();
+  const { user } = useAuth();
   const { show: showToast } = useToast();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [clientId, setClientId] = useState<string | null>(null);
@@ -198,16 +198,31 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [setRoomId, setOpponent, setGameStatus, setTurn, addLog, setOpponentFleetReady, setRoomReady, setOpponentRoomReady, setOpponentStatus, setFleetReady, setBattleMode]);
 
   const joinRandomRoom = useCallback((nameOverride?: string, fleet?: any[], mode?: string) => {
-    if (socket) socket.emit('join_random', { name: nameOverride || '', fleet, mode: mode || 'classic' });
-  }, [socket]);
+    if (socket) socket.emit('join_random', { 
+        name: nameOverride || '', 
+        userId: user?.id,
+        fleet, 
+        mode: mode || 'classic' 
+    });
+  }, [socket, user]);
 
   const joinSpecificRoom = useCallback((targetId: string, nameOverride?: string, fleet?: any[]) => {
-    if (socket) socket.emit('join_specific', { name: nameOverride || '', targetId, fleet });
-  }, [socket]);
+    if (socket) socket.emit('join_specific', { 
+        name: nameOverride || '', 
+        userId: user?.id,
+        targetId, 
+        fleet 
+    });
+  }, [socket, user]);
 
   const createRoom = useCallback((nameOverride?: string, fleet?: any[], mode?: string) => {
-    if (socket) socket.emit('create_room', { name: nameOverride || '', fleet, mode: mode || 'classic' });
-  }, [socket]);
+    if (socket) socket.emit('create_room', { 
+        name: nameOverride || '', 
+        userId: user?.id,
+        fleet, 
+        mode: mode || 'classic' 
+    });
+  }, [socket, user]);
 
   const emitMove = useCallback((r: number, c: number) => {
     if (socket) socket.emit('fire_shot', { r, c });
@@ -259,10 +274,14 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const startPve = useCallback((name: string, mode?: string) => {
     if (socket) {
-      socket.emit('start_pve', { name, mode: mode || 'classic' });
+      socket.emit('start_pve', { 
+          name, 
+          userId: user?.id,
+          mode: mode || 'classic' 
+      });
       setIsPlayingPvE(true);
     }
-  }, [socket, setIsPlayingPvE]);
+  }, [socket, user, setIsPlayingPvE]);
 
   const endPve = useCallback(() => {
     if (socket) {

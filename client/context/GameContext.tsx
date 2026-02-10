@@ -263,6 +263,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       battleLogs: [],
       currentTurn: null,
       gameStatus: GamePhase.WAITING,
+      isRoomReady: false,
+      isOpponentRoomReady: false,
       opponent: prev.opponent ? { ...prev.opponent, fleetReady: false } : null
     }));
   }, []);

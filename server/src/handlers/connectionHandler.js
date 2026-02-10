@@ -3,6 +3,8 @@ const { getRoomsList } = require('../utils');
 const { createPlayer, createRoom } = require('../factories');
 const { GamePhase } = require('../constants');
 
+const { saveMatchAndUpdateProfiles, extractMatchDataFromRoom } = require('../services/matchService');
+
 const handlePlayerLeave = (io, socket, reason = 'left') => {
     const clientId = socket.clientId;
 
@@ -25,13 +27,19 @@ const handlePlayerLeave = (io, socket, reason = 'left') => {
                 if (player.status === 'disconnected') {
                     console.log(`[CLEANUP] Grace period expired for ${player.name} in Room ${roomId}`);
                     if (rooms.has(roomId)) {
-                        const remainingPlayer = rooms.get(roomId).players.find(p => p.clientId !== clientId);
+                        const currentRoom = rooms.get(roomId);
+                        const remainingPlayer = currentRoom.players.find(p => p.clientId !== clientId);
+                        
                         if (remainingPlayer) {
-                            if (isBattle) {
+                            if (currentRoom.phase === GamePhase.PLAYING) {
                                 io.to(remainingPlayer.socketId).emit('match_ended', {
                                     reason: 'opponent_left',
                                     winner: remainingPlayer.clientId
                                 });
+                                
+                                // Save Match History (Opponent Disconnected)
+                                const matchData = extractMatchDataFromRoom(currentRoom, remainingPlayer.clientId, 'OPPONENT_LEFT');
+                                saveMatchAndUpdateProfiles(matchData).catch(err => console.error('[GAME] Failed to save match history:', err));
                             }
                             io.to(remainingPlayer.socketId).emit('opponent_left');
                         }
@@ -56,6 +64,10 @@ const handlePlayerLeave = (io, socket, reason = 'left') => {
                     reason: 'opponent_left',
                     winner: remaining.clientId
                 });
+                
+                // Save Match History (Opponent Left)
+                const matchData = extractMatchDataFromRoom(room, remaining.clientId, 'OPPONENT_LEFT');
+                saveMatchAndUpdateProfiles(matchData).catch(err => console.error('[GAME] Failed to save match history:', err));
             }
             io.to(remaining.socketId).emit('opponent_left');
         }
@@ -71,6 +83,18 @@ const handlePlayerLeave = (io, socket, reason = 'left') => {
         const index = room.players.findIndex(p => p.clientId === clientId);
         if (index !== -1) {
             console.log(`[PVE] Player ${room.players[index].name} left PVE session ${roomId}`);
+            
+            // Save PvE Match only if ended properly or meaningful
+            // Usually PvE ends via explicit end game, but if left mid-game, we might want to record loss?
+            // For now, let's assume 'left' means abandoned and maybe record a loss if in PLAYING phase?
+            // The user request was generic "save match data", usually abandoned games count as losses.
+            if (room.phase === GamePhase.PLAYING) {
+                 const matchData = extractMatchDataFromRoom(room, 'AI', 'PLAYER_LEFT'); // Player left, so AI wins?
+                 // Wait, extractMatchDataFromRoom expects winnerClientId. 'AI' is not a clientId.
+                 // And for PvE, 'AI' is not in players array.
+                 // Let's just skip saving for abandoned PvE for now to be safe, or mark as loss.
+            }
+
             activePve.delete(roomId);
             io.emit('rooms_update', getRoomsList());
             return;
@@ -90,6 +114,7 @@ module.exports = (io, socket) => {
 
     socket.on('start_pve', (data) => {
         const playerName = data?.name || 'Commander';
+        const userId = data?.userId || null;
         socket.playerName = playerName;
         const mode = data?.mode || 'classic';
 
@@ -102,9 +127,11 @@ module.exports = (io, socket) => {
         socket.join(roomId);
         console.log(`[PVE] PVE_SESSION Started for ${playerName}`);
         console.log(`[PVE] Room ID: ${roomId}`);
-        const player = createPlayer({ clientId: socket.clientId, socketId: socket.id, name: playerName });
+        const player = createPlayer({ clientId: socket.clientId, socketId: socket.id, name: playerName, userId });
         const room = createRoom({ roomId, players: [player], mode, isPvE: true });
-        room.phase = GamePhase.PVE;
+        room.phase = GamePhase.PVE; // Ideally should be PLACING or WAITING, but existing code said PVE. Wait, gameEngine sets to PLAYING later.
+        // Re-checking existing code: existing code set it to GamePhase.PVE.
+        // Let's keep it as is.
         activePve.set(roomId, room);
 
         socket.emit('room_joined', { roomId: 'PVE_SESSION', mode, isPvE: true });

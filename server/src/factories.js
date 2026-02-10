@@ -11,7 +11,7 @@ function createPlayer({ clientId, socketId, name, userId = null, fleet = [] }) {
         roomReady: false, // For lobby/matching readiness
         fleet: fleet,
         shotsReceived: new Set(),
-        stats: { shots: 0, hits: 0, misses: 0, score: 0 },
+        stats: { shots: 0, hits: 0, misses: 0, score: 0, shipsSunk: 0 },
         disconnectTimer: null
     };
 }

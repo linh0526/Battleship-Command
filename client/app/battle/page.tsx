@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Target } from 'lucide-react';
 import { useRouter, useSearchParams, notFound, usePathname } from 'next/navigation';
 import { Suspense } from 'react';
@@ -34,6 +34,19 @@ export function BattleContent() {
   const { 
     battleLayout, enableSound, enableVibration, healthBarStyle
   } = useSettings();
+
+  // Use refs for settings to avoid closure issues in socket handlers
+  const soundRef = useRef(enableSound);
+  const vibrationRef = useRef(enableVibration);
+
+  useEffect(() => {
+    soundRef.current = enableSound;
+  }, [enableSound]);
+
+  useEffect(() => {
+    vibrationRef.current = enableVibration;
+  }, [enableVibration]);
+
   const [showOpponentLeftModal, setShowOpponentLeftModal] = useState(false);
   const [showAbortModal, setShowAbortModal] = useState(false);
   // Track shots
@@ -53,10 +66,16 @@ export function BattleContent() {
   const [impactEffect, setImpactEffect] = useState<'hit' | 'enemy-hit' | null>(null);
 
   const triggerImpact = useCallback((type: 'hit' | 'enemy-hit') => {
-    if (!enableVibration) return;
+    if (!vibrationRef.current) return;
     setImpactEffect(type);
+    
+    // Physical vibration for mobile/supported devices
+    if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(type === 'hit' ? [50] : [100, 50, 100]);
+    }
+    
     setTimeout(() => setImpactEffect(null), 500);
-  }, [enableVibration]);
+  }, []);
 
   // Listen for opponent leaving
   useEffect(() => {
@@ -216,7 +235,7 @@ export function BattleContent() {
             });
             
             if (result === 'hit' || result === 'sunk') {
-                 if (enableSound) {
+                 if (soundRef.current) {
                     const audio = new Audio(result === 'sunk' ? '/sink.mp3' : '/shot-thaydan.mp3');
                     audio.play().catch(() => {});
                  }
@@ -227,7 +246,7 @@ export function BattleContent() {
                  }
                  triggerImpact('hit');
             } else {
-                 if (enableSound) new Audio('/shot-miss.mp3').play().catch(() => {});
+                 if (soundRef.current) new Audio('/shot-miss.mp3').play().catch(() => {});
             }
 
         } else {
@@ -239,7 +258,7 @@ export function BattleContent() {
             });
 
             if (result === 'hit' || result === 'sunk') {
-                 if (enableSound) {
+                 if (soundRef.current) {
                     const audio = new Audio(result === 'sunk' ? '/sink.mp3' : '/shot-thaydan.mp3'); 
                     audio.play().catch(() => {});
                  }
@@ -249,7 +268,7 @@ export function BattleContent() {
                  }
                  triggerImpact('enemy-hit');
             } else {
-                 if (enableSound) new Audio('/shot-miss.mp3').play().catch(() => {});
+                 if (soundRef.current) new Audio('/shot-miss.mp3').play().catch(() => {});
             }
         }
       };
@@ -268,7 +287,7 @@ export function BattleContent() {
         setGameResult('win');
         addScore('player', 1);
         addLog({ msg: t('log_victory'), result: t('log_mission_complete'), type: 'sys' });
-        if (enableSound) new Audio('/victory.mp3').play().catch(() => {}); 
+        if (soundRef.current) new Audio('/victory.mp3').play().catch(() => {}); 
       };
 
       const handleDefeat = () => {
@@ -288,14 +307,6 @@ export function BattleContent() {
       socket.on('player_defeat', handleDefeat);
       socket.on('match_start_init', handleMatchStart);
       
-      // Auto-ready if we join a room while in waiting state (from Continue Searching)
-      const handleRoomJoined = () => {
-        if (gameState.gameStatus === GamePhase.WAITING) {
-          socket.emit('player_room_ready', { ready: true });
-        }
-      };
-      socket.on('room_joined', handleRoomJoined);
-      
       // Handle match termination (handled by the unified opponent_left listener above for most cases)
       // but keeping this for explicit game end reasons if needed later.
 
@@ -305,7 +316,6 @@ export function BattleContent() {
         socket.off('player_victory', handleVictory);
         socket.off('player_defeat', handleDefeat);
         socket.off('match_start_init', handleMatchStart);
-        socket.off('room_joined', handleRoomJoined);
         socket.off('match_ended');
       };
     }
