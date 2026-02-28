@@ -27,7 +27,7 @@ function LobbyContent() {
   const { t } = useLanguage();
   const { gameState, setGameMode, resetGame, setPlayerName, resetScores, prepareRematch, setRoomId } = useGame();
   const { socket, isConnected, isInitialLoad, startPve, joinSpecificRoom, createRoom, joinRandomRoom, updatePlayerName } = useSocket();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, setIsAuthOpen } = useAuth();
   const { show: showToast } = useToast();
   const { clientId } = useSocket();
 
@@ -82,6 +82,14 @@ function LobbyContent() {
         if (data.exists) {
           lastProcessedRoomId.current = roomId;
           
+          // Rank Enforcement for URL joining
+          if (data.isRanked && !isAuthenticated) {
+            showToast(t('login_required') + '||RANKED_PVP', 'info');
+            setIsAuthOpen(true);
+            router.replace('/', { scroll: false });
+            return;
+          }
+
           const isParticipant = data.playerIds?.includes(clientId);
           
           // Reconnection Case: User is already in the room
@@ -115,7 +123,7 @@ function LobbyContent() {
             return;
           }
 
-          // Standard Join Case: Room is waiting and has space
+          // Standard Join Case: Room is waiting and has space (Allowed for Guests in Custom)
           if (isAuthenticated && user) {
             setPlayerName(user.username);
             setGameMode('PvP');
@@ -193,28 +201,16 @@ function LobbyContent() {
     return name;
   };
 
-  const processPvpAction = (name: string) => {
-    const waitingRoom = activeRooms && activeRooms.find(r => 
-      (r.status === 'WAITING' || r.status === 'waiting' || r.status === t('room_waiting')) && 
-      r.captains === '1/2'
-    );
-
-    if (waitingRoom) {
-      joinSpecificRoom(waitingRoom.id, name);
-    } else {
-      createRoom(name, undefined, 'classic'); 
-    }
-  };
 
   const handleStartPvP = () => {
     resetGame();
     setGameMode('PvP');
     if (isAuthenticated && user) {
       setPlayerName(user.username);
-      processPvpAction(user.username);
+      joinRandomRoom(user.username, undefined, 'classic', true);
     } else {
-      setPendingAction('pvp');
-      setShowNameModal(true);
+      showToast(t('login_required') + '||RANKED_PVP', 'info');
+      setIsAuthOpen(true);
     }
   };
 
@@ -238,14 +234,22 @@ function LobbyContent() {
     }
   };
 
-  const handleJoinRequested = (id: string) => {
+  const handleJoinRequested = (id: string, isRanked?: boolean) => {
     resetScores();
     prepareRematch();
     setGameMode('PvP');
+
     if (isAuthenticated && user) {
       setPlayerName(user.username);
       joinSpecificRoom(id, user.username);
     } else {
+      // If the room is Ranked, guests are not allowed
+      if (isRanked) {
+        showToast(t('login_required') + '||RANKED_PVP', 'info');
+        setIsAuthOpen(true);
+        return;
+      }
+
       setPendingId(id);
       setPendingAction('join');
       setShowNameModal(true);
@@ -271,17 +275,8 @@ function LobbyContent() {
       
       switch (pendingAction) {
         case 'pvp':
-          // Tìm phòng đang chờ (WAITING) trong danh sách activeRooms
-          const waitingRoom = activeRooms && activeRooms.find(r => 
-            (r.status === 'WAITING' || r.status === 'waiting' || r.status === t('room_waiting')) && 
-            r.captains === '1/2'
-          );
-
-          if (waitingRoom) {
-            joinSpecificRoom(waitingRoom.id, tempName);
-          } else {
-            createRoom(tempName, undefined, 'classic'); 
-          }
+          // Sử dụng Matchmaking chính thức (Ranked) thay vì tìm phòng thủ công
+          joinRandomRoom(tempName, undefined, 'classic', true);
           break;
         case 'create':
           createRoom(tempName, undefined, customGameMode);
@@ -342,6 +337,8 @@ function LobbyContent() {
             <ActiveOperations 
               activeRooms={activeRooms}
               isConnected={isConnected}
+              isAuthenticated={isAuthenticated}
+              setIsAuthOpen={setIsAuthOpen}
               onJoinRoom={handleJoinRequested}
               t={t}
             />

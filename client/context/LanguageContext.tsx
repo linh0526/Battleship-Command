@@ -78,8 +78,10 @@ const translations = {
     ranked_match: 'Global Matchmaking',
     pve_training: 'Ghost AI (PvE)',
     ready_to_deploy: 'READY TO DEPLOY',
-    create_room: 'Create Custom Room',
+    create_room: 'Play With Friends',
     active_ops: 'Active Operations',
+    active_ops_desc: 'Identify tactical signatures in the sector',
+    login_to_scan: 'Login to Scan',
     op_name: 'Operation Name',
     difficulty: 'Difficulty',
     grid_size: 'Grid Size',
@@ -348,6 +350,7 @@ const translations = {
     feedback: 'Feedback & Suggestions',
     contact_info: 'Technical Support & Community',
     github_repo: 'Source Code / GitHub',
+    github_star: 'pls give me 1 star in project thank you!!!',
     donate: 'Support Development',
     donate_desc: 'Help keep the servers running and the fleet operational.',
     email_support: 'Email Support',
@@ -358,6 +361,68 @@ const translations = {
     coffee_msg: 'Buy Admin a coffee to keep development going! ☕️',
     coffee_thanks: 'Thank you for being part of Battleship Command.',
     coffee_status: 'Status: Connected to Coffee Grid',
+    
+    // Leaderboard
+    leaderboard_loading: 'Accessing Central Command Records...',
+    leaderboard_subtitle: 'Real-time ranking of Global Fleet Commanders across active combat zones.',
+    tactical_lead: 'Tactical Fleet Lead',
+    win_rate: 'Win Rate',
+    elo_rating: 'ELO Rating',
+    global_standings: 'Global Standings',
+    search_commander: 'Search Commander...',
+    current_elo: 'Current ELO',
+    matches_label: 'Matches',
+    win_stats: 'Win Statistics',
+    record: 'Record',
+    ratio: 'Ratio',
+    profile_btn: 'PROFILE',
+    fleet_records_footer: '-- CLASSIFIED FLEET RECORDS v4.0.2 --',
+    loading_intel: 'Loading Intel...',
+    no_active_deployments: 'No active deployments found.',
+    view_full_leaderboard: 'View Full Leaderboard',
+    wins_label: 'WINS',
+    
+    // Profile
+    profile_title: 'Commander Profile',
+    unlocked_achievements: 'Achievements Unlocked',
+    edit_profile: 'Modify Profile',
+    total_hits_xp: 'Total Hits XP',
+    hall_of_achievements: 'Hall of Achievements',
+    update_intel_title: 'Update Intel',
+    update_intel_desc: 'Personalize your combat profile for the fleet directory.',
+    edit_commander_info: 'Edit Commander Info',
+    callsign: 'Callsign',
+    mission_briefing: 'Mission Briefing (Bio)',
+    bio_placeholder: 'Describe your tactics...',
+    id_photo: 'Identification Photo',
+    custom_url: 'Custom URL...',
+    save_changes: 'VERIFY & SAVE CHANGES',
+    updating_data: 'UPDATING ENCRYPTED DATA...',
+    no_bio: 'No tactical profile available.',
+
+    // Social
+    fleet_directory: 'Fleet Directory',
+    search_commander_placeholder: 'Input callsign to intercept signal...',
+    send_friend_request: 'Send Friend Request',
+    request_sent: 'Signal Transmitted',
+    already_friends: 'Allied Commander',
+    pending_approval: 'Awaiting Verification',
+    no_commanders_found: 'No signals detected in this sector.',
+    maritime_allies: 'Maritime Allies',
+    no_allies: 'No confirmed alliances in your direct sector.',
+    incoming_signals: 'Incoming Requests',
+    outgoing_signals: 'Transmitted Requests',
+    accept_alliance: 'VERIFY ALLIANCE',
+    reject_signal: 'REJECT SIGNAL',
+    unfriend_commander: 'TERMINATE ALLIANCE',
+    chat_with_ally: 'Tactical Signal Link',
+    type_signal: 'Type encrypted message...',
+    combat_comms: 'Combat Comms',
+    pending_friend_requests: 'Pending Friend Requests',
+    no_new_notifications: 'No new notifications.',
+    status_online: 'ONLINE',
+    status_offline: 'OFFLINE',
+    status_ingame: 'IN COMBAT',
   },
   vi: {
     // Header
@@ -426,8 +491,10 @@ const translations = {
     ranked_match: 'Ghép Trận Toàn Cầu',
     pve_training: 'Đấu Với Máy (PvE)',
     ready_to_deploy: 'SẴN SÀNG TRIỂN KHAI',
-    create_room: 'Tạo Phòng Tùy Chỉnh',
+    create_room: 'Chơi Với Bạn',
     active_ops: 'Chiến Dịch Đang Hoạt Động',
+    active_ops_desc: 'Xác định tín hiệu chiến thuật trong khu vực',
+    login_to_scan: 'Đăng nhập để quét',
     op_name: 'Tên Chiến Dịch',
     difficulty: 'Độ Khó',
     grid_size: 'Kích Thước Lưới',
@@ -696,6 +763,7 @@ const translations = {
     feedback: 'Góp Ý & Phản Hồi',
     contact_info: 'Hỗ Trợ Kỹ Thuật & Cộng Đồng',
     github_repo: 'Mã Nguồn / GitHub',
+    github_star: 'hãy cho tui thêm 1 star trong dự án này, cảm ơn bạn!!!',
     donate: 'Ủng Hộ Phát Triển',
     donate_desc: 'Giúp duy trì máy chủ và hạm đội hoạt động ổn định.',
     email_support: 'Liên Hệ Qua Email',
@@ -706,6 +774,68 @@ const translations = {
     coffee_msg: 'Mời Admin 1 ly coffee tiếp thêm động lực phát triển nhé! ☕️',
     coffee_thanks: 'Cảm ơn bạn đã đồng hành cùng Battleship Command.',
     coffee_status: 'Trạng thái: Đã kết nối Hệ thống Coffee',
+    
+    // Leaderboard
+    leaderboard_loading: 'Đang truy cập hồ sơ Trung tâm Chỉ huy...',
+    leaderboard_subtitle: 'Bảng xếp hạng thời gian thực của các Chỉ huy Hạm đội Toàn cầu.',
+    tactical_lead: 'Chỉ huy Chiến thuật',
+    win_rate: 'Tỷ lệ thắng',
+    elo_rating: 'Điểm ELO',
+    global_standings: 'Thứ hạng Toàn cầu',
+    search_commander: 'Tìm kiếm Chỉ huy...',
+    current_elo: 'ELO Hiện tại',
+    matches_label: 'Số trận',
+    win_stats: 'Thống kê thắng',
+    record: 'Hồ sơ',
+    ratio: 'Tỷ lệ',
+    profile_btn: 'HỒ SƠ',
+    fleet_records_footer: '-- HỒ SƠ HẠM ĐỘI MẬT v4.0.2 --',
+    loading_intel: 'Đang tải thông tin...',
+    no_active_deployments: 'Không tìm thấy chiến dịch nào.',
+    view_full_leaderboard: 'Xem toàn bộ Bảng xếp hạng',
+    wins_label: 'TRẬN THẮNG',
+    
+    // Profile
+    profile_title: 'Hồ sơ Chỉ huy',
+    unlocked_achievements: 'Thành tựu đã mở',
+    edit_profile: 'Chỉnh sửa hồ sơ',
+    total_hits_xp: 'Kinh nghiệm chiến đấu (XP)',
+    hall_of_achievements: 'Bảo tàng Thành tựu',
+    update_intel_title: 'Cập nhật Hồ sơ',
+    update_intel_desc: 'Cá nhân hóa hồ sơ chiến đấu của bạn trong danh bạ hạm đội.',
+    edit_commander_info: 'Thông tin Chỉ huy',
+    callsign: 'Bí danh / Tên gọi',
+    mission_briefing: 'Tiểu sử / Mô tả',
+    bio_placeholder: 'Mô tả chiến thuật hoặc giới thiệu bản thân...',
+    id_photo: 'Ảnh nhận diện',
+    custom_url: 'Đường dẫn ảnh tùy chỉnh...',
+    save_changes: 'XÁC NHẬN & LƯU THAY ĐỔI',
+    updating_data: 'ĐANG MÃ HÓA VÀ CẬP NHẬT...',
+    no_bio: 'Chưa có thông tin hồ sơ chiến thuật.',
+
+    // Social
+    fleet_directory: 'Danh Bạ Hạm Đội',
+    search_commander_placeholder: 'Nhập biệt hiệu để dò tín hiệu...',
+    send_friend_request: 'Gửi Yêu Cầu Kết Bạn',
+    request_sent: 'Đã Truyền Tín Hiệu',
+    already_friends: 'Chỉ Huy Đồng Minh',
+    pending_approval: 'Đang Chờ Xác Minh',
+    no_commanders_found: 'Không tìm thấy tín hiệu trong khu vực này.',
+    maritime_allies: 'Đồng Minh Chiến Hạm',
+    no_allies: 'Chưa có liên minh xác nhận trong khu vực.',
+    incoming_signals: 'Tín Hiệu Đang Đến',
+    outgoing_signals: 'Tín Hiệu Đã Truyền',
+    accept_alliance: 'XÁC MINH LIÊN MINH',
+    reject_signal: 'TỪ CHỐI TÍN HIỆU',
+    unfriend_commander: 'CHẤM DỨT LIÊN MINH',
+    chat_with_ally: 'Liên Lạc Chiến Thuật',
+    type_signal: 'Nhập tin nhắn mã hóa...',
+    combat_comms: 'Thông Liên Chiến Đấu',
+    pending_friend_requests: 'Yêu Cầu Liên Minh Chờ Duyệt',
+    no_new_notifications: 'Chưa có biến động báo cáo.',
+    status_online: 'ĐANG HOẠT ĐỘNG',
+    status_offline: 'MẤT TÍN HIỆU',
+    status_ingame: 'ĐANG TÁC CHIẾN',
   }
 };
 
@@ -714,11 +844,19 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>('en');
 
-  // Load language preference from local storage
+  // Load language preference from local storage or system language
   useEffect(() => {
     const saved = localStorage.getItem('app-language') as Language;
     if (saved && (saved === 'en' || saved === 'vi')) {
       setLanguage(saved);
+    } else {
+      // Detect system language
+      const browserLang = navigator.language.toLowerCase();
+      if (browserLang.startsWith('vi')) {
+        setLanguage('vi');
+      } else {
+        setLanguage('en');
+      }
     }
   }, []);
 

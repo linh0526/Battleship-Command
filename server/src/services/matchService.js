@@ -2,6 +2,7 @@ const MatchHistory = require('../models/MatchHistory');
 const Profile = require('../models/Profile');
 const User = require('../models/User');
 const { checkAchievements } = require('./achievementService');
+const { calculateEloChange } = require('./eloService');
 
 /**
  * Lưu match history và cập nhật profile stats
@@ -22,48 +23,75 @@ async function saveMatchAndUpdateProfiles(matchData) {
         return;
     }
 
+    console.log(`[MATCH] Processing: room=${roomId}, ranked=${matchData.isRanked}, mode=${mode}`);
+
     try {
-        // 1. LƯU MATCH HISTORY cho từng player
-        const matchPromises = players.map(async (player) => {
-            const opponent = players.find(p => p.userId !== player.userId);
-            
+        const registreredPlayers = players.filter(p => p.userId);
+        
+        // 1. SAVE MATCH HISTORY
+        const matchPromises = registreredPlayers.map(async (player) => {
+            const opponent = players.find(p => p !== player);
             const match = new MatchHistory({
                 roomId,
                 userId: player.userId,
                 opponentId: opponent?.userId || null,
-                opponentName: opponent?.name || 'AI',
+                opponentName: opponent?.name || (mode === 'PvE' ? 'Ghost AI' : 'Guest'),
                 result: player.result,
                 mode,
+                isRanked: matchData.isRanked || false,
                 shots: {
-                    player: {
-                        total: player.shots.total,
-                        hit: player.shots.hit
-                    },
-                    opponent: {
-                        total: opponent?.shots.total || 0,
-                        hit: opponent?.shots.hit || 0
-                    }
+                    player: { total: player.shots.total, hit: player.shots.hit },
+                    opponent: { total: opponent?.shots.total || 0, hit: opponent?.shots.hit || 0 }
                 },
                 duration,
                 endReason,
                 endedAt: new Date()
             });
-
             return match.save();
         });
 
         await Promise.all(matchPromises);
-        console.log(`[MATCH] Saved match history for room ${roomId}`);
 
-        // 2. CẬP NHẬT PROFILE STATS (chỉ cho user đã đăng ký)
+        // 2. CALCULATE ELO FOR RANKED PVP
+        let eloResults = {}; 
+        if (matchData.isRanked && mode === 'PvP' && registreredPlayers.length === 2) {
+            const playerA = registreredPlayers[0];
+            const playerB = registreredPlayers[1];
+
+            let profileA = await Profile.findOne({ userId: playerA.userId });
+            let profileB = await Profile.findOne({ userId: playerB.userId });
+
+            if (profileA && profileB) {
+                const ratingA = profileA.stats.pvp.elo || 0;
+                const ratingB = profileB.stats.pvp.elo || 0;
+
+                const scoreA = playerA.result === 'win' ? 1 : (playerA.result === 'draw' ? 0.5 : 0);
+                const scoreB = playerB.result === 'win' ? 1 : (playerB.result === 'draw' ? 0.5 : 0);
+
+                const changeA = calculateEloChange(ratingA, ratingB, scoreA);
+                const changeB = calculateEloChange(ratingB, ratingA, scoreB);
+
+                eloResults[playerA.userId] = changeA;
+                eloResults[playerB.userId] = changeB;
+
+                console.log(`[ELO] ${playerA.name}: ${ratingA} -> ${ratingA + changeA} (${changeA > 0 ? '+' : ''}${changeA})`);
+                console.log(`[ELO] ${playerB.name}: ${ratingB} -> ${ratingB + changeB} (${changeB > 0 ? '+' : ''}${changeB})`);
+            }
+        }
+
+        // 3. UPDATE PROFILES
         const profilePromises = players.map(async (player) => {
-            if (!player.userId) return; // Skip guest players
-
-            await updatePlayerProfile(player, mode, duration);
+            if (!player.userId) return; 
+            if (matchData.isRanked || mode === 'PvE') {
+                const eloChange = eloResults[player.userId] || 0;
+                await updatePlayerProfile(player, mode, duration, eloChange);
+            }
         });
 
         await Promise.all(profilePromises);
-        console.log(`[MATCH] Updated player profiles`);
+        
+        // Return elo changes for front-end push
+        return { eloChanges: eloResults };
 
     } catch (error) {
         console.error('[MATCH] Error saving match:', error);
@@ -71,7 +99,7 @@ async function saveMatchAndUpdateProfiles(matchData) {
     }
 }
 
-async function updatePlayerProfile(playerData, mode, duration) {
+async function updatePlayerProfile(playerData, mode, duration, eloChange = 0) {
     const { userId, shots, result, shipsSunk } = playerData;
 
     try {
@@ -82,7 +110,7 @@ async function updatePlayerProfile(playerData, mode, duration) {
             profile = new Profile({ 
                 userId,
                 stats: {
-                    pvp: { matches: 0, wins: 0, losses: 0, draws: 0, shots: { total: 0, hit: 0 }, accuracy: 0, avgShotsPerMatch: 0 },
+                    pvp: { matches: 0, wins: 0, losses: 0, draws: 0, shots: { total: 0, hit: 0 }, accuracy: 0, elo: 0, avgShotsPerMatch: 0 },
                     pve: { matches: 0, wins: 0, losses: 0, shots: { total: 0, hit: 0 }, accuracy: 0, avgShotsPerMatch: 0 }
                 },
                 achievements: {
@@ -108,6 +136,10 @@ async function updatePlayerProfile(playerData, mode, duration) {
         stats.accuracy = stats.shots.total > 0 
             ? Math.round((stats.shots.hit / stats.shots.total) * 100) 
             : 0;
+
+        if (statsKey === 'pvp') {
+            stats.elo = (stats.elo || 0) + eloChange;
+        }
 
         stats.avgShotsPerMatch = stats.matches > 0
             ? Math.round(stats.shots.total / stats.matches)
@@ -150,6 +182,11 @@ async function updatePlayerProfile(playerData, mode, duration) {
         }
 
         profile.updatedAt = new Date();
+        
+        // Cần markModified để Mongoose nhận diện thay đổi trong Object lồng nhau
+        profile.markModified('stats');
+        profile.markModified('achievements');
+        
         await profile.save();
 
         console.log(`[PROFILE] Updated ${userId} - ${mode} stats`);
@@ -181,6 +218,7 @@ function extractMatchDataFromRoom(room, winnerClientId, endReason) {
         roomId: room.id,
         players,
         mode: room.isPvE ? 'PvE' : 'PvP',
+        isRanked: room.isRanked || false,
         duration,
         endReason
     };

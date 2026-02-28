@@ -120,7 +120,18 @@ module.exports = (io, socket) => {
                 const { saveMatchAndUpdateProfiles, extractMatchDataFromRoom } = require('../services/matchService');
                 const matchData = extractMatchDataFromRoom(room, socket.clientId, 'VICTORY');
                 
-                saveMatchAndUpdateProfiles(matchData).catch(err => {
+                saveMatchAndUpdateProfiles(matchData).then(result => {
+                    if (result && result.eloChanges) {
+                        // Notify players about ELO changes
+                        room.players.forEach(p => {
+                            const change = result.eloChanges[p.userId] || 0;
+                            io.to(p.socketId).emit('elo_update', { 
+                                currentElo: p.stats?.elo || 0, // In-memory stats fallback to 0
+                                change: change 
+                            });
+                        });
+                    }
+                }).catch(err => {
                     console.error('[GAME] Failed to save match history:', err);
                 });
 
@@ -186,11 +197,15 @@ module.exports = (io, socket) => {
             const newRoom = createRoom({ 
                 roomId: newRoomId, 
                 players, 
-                mode: oldRoom.mode 
+                mode: oldRoom.mode,
+                isRanked: oldRoom.isRanked 
             });
             rooms.set(newRoomId, newRoom);
 
-            // 4. Move sockets to new room
+            // 4. Notify both players about the rematch starting (to clear state)
+            io.to(oldRoomId).emit('rematch_started');
+
+            // 5. Move sockets to new room
             players.forEach(p => {
                 const s = io.sockets.sockets.get(p.socketId);
                 if (s) {
@@ -198,9 +213,6 @@ module.exports = (io, socket) => {
                     s.join(newRoomId);
                 }
             });
-
-            // 5. Notify both players about the rematch starting (to clear state)
-            io.to(oldRoomId).emit('rematch_started');
 
             // 6. Notify both players about the new room
             players.forEach(p => {

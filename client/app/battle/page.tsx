@@ -26,7 +26,7 @@ export function BattleContent() {
   const { 
     emitMove, emitRematchRequest, 
     emitRematchAccept, onRematchRequested, onRematchAccepted, 
-    socket, leaveRoom, endPve, clientId: myClientId, joinRandomRoom
+    socket, leaveRoom, endPve, clientId: myClientId, joinRandomRoom, eloUpdate
   } = useSocket();
   const { 
     gameState, addLog, setTurn, resetGame, prepareRematch, addScore, setRoomId, setGameStatus
@@ -743,6 +743,7 @@ export function BattleContent() {
             sunkShips: sunkPlayerShips
           }
         }}
+        eloUpdate={eloUpdate}
       />
 
       <motion.div 

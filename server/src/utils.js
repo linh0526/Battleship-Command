@@ -40,7 +40,8 @@ function getRoomsList() {
             status: status,
             statusColor: statusColor,
             mode: room.mode || 'classic',
-            isPvE: false
+            isPvE: false,
+            isRanked: !!room.isRanked
         });
     });
 

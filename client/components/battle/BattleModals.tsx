@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wind, Trophy, AlertTriangle, Search, LogOut, Swords } from 'lucide-react';
+import { Wind, Trophy, AlertTriangle, Search, LogOut, Swords, Zap, Shield } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import { getRank } from '@/lib/utils';
 import { GamePhase, useGame } from '@/context/GameContext';
 import { useAuth } from '@/context/AuthContext';
 
@@ -38,6 +39,7 @@ interface BattleModalsProps {
       sunkShips: number;
     };
   };
+  eloUpdate?: { currentElo: number; change: number } | null;
 }
 
 const overlayVariants = {
@@ -77,11 +79,14 @@ export default function BattleModals({
   showAbortModal,
   setShowAbortModal,
   onConfirmAbort,
-  stats
+  stats,
+  eloUpdate
 }: BattleModalsProps) {
   const { t } = useLanguage();
   const { gameState } = useGame();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+
+  const playerRank = getRank(user?.profile?.stats?.pvp?.matches || 0);
 
   React.useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -223,6 +228,43 @@ export default function BattleModals({
                       {gameResult === 'win' ? t('victory_desc') : t('defeat_desc')}
                     </p>
                 </div>
+
+                {/* ELO UPDATE DISPLAY */}
+                {eloUpdate && (
+                  <motion.div 
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.5, type: 'spring' }}
+                    className="mt-2 flex flex-col items-center gap-2"
+                  >
+                    <div className="bg-slate-900/80 border border-white/10 px-6 py-3 rounded-2xl shadow-2xl flex flex-col items-center">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Rank Adjustment</span>
+                      <div className="flex items-center gap-4">
+                         <div className="flex flex-col items-center">
+                           <span className="text-2xl font-black text-white">{eloUpdate.currentElo}</span>
+                           <span className="text-[8px] font-black text-slate-600 uppercase">Current ELO</span>
+                         </div>
+                         <div className="h-8 w-px bg-white/10"></div>
+                         <div className="flex flex-col items-center">
+                           <span className={`text-2xl font-black flex items-center gap-1 ${eloUpdate.change >= 0 ? 'text-emerald-400' : 'text-error'}`}>
+                             {eloUpdate.change >= 0 ? '+' : ''}{eloUpdate.change}
+                             {eloUpdate.change >= 0 ? <Zap className="w-4 h-4" /> : <Shield className="w-4 h-4 opacity-50" />}
+                           </span>
+                           <span className="text-[8px] font-black text-slate-600 uppercase">Points Delta</span>
+                         </div>
+                      </div>
+                    </div>
+                    {eloUpdate.change > 0 && (
+                      <motion.span 
+                        animate={{ opacity: [0, 1, 0], y: [0, -20] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                        className="text-emerald-400 text-xs font-black uppercase tracking-widest"
+                      >
+                        Performance Excellent
+                      </motion.span>
+                    )}
+                  </motion.div>
+                )}
              </div>
 
              {stats && (
@@ -235,7 +277,7 @@ export default function BattleModals({
                          {gameState.playerName || 'Commander'}
                        </span>
                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">
-                         {isAuthenticated ? t('admiral') : t('guest_commander')}
+                         {isAuthenticated ? playerRank : t('guest_commander')}
                        </span>
                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${gameResult === 'win' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
                          {gameResult === 'win' ? 'VICTOR' : 'DEFEAT'}

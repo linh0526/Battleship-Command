@@ -10,6 +10,8 @@ import {
   Users, Shield, Zap, LogOut, Swords, Timer, 
   CheckCircle2, ChevronRight, AlertTriangle, X, Copy, Check 
 } from 'lucide-react';
+import { getRank } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 
 interface MatchingModalProps {
   isOpen: boolean;
@@ -26,6 +28,9 @@ export default function MatchingModal({ isOpen, onClose }: MatchingModalProps) {
   const { 
     socket, emitRoomReady, emitStartMatch, leaveRoom 
   } = useSocket();
+  const { user } = useAuth();
+  
+  const userRank = getRank(user?.profile?.stats?.pvp?.matches || 0);
 
   const [countdown, setCountdown] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
@@ -126,7 +131,7 @@ export default function MatchingModal({ isOpen, onClose }: MatchingModalProps) {
                   </div>
                 )}
               </div>
-              <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">{t('commander_you')}</p>
+              <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">{userRank} (Bạn)</p>
               <h3 className="text-2xl md:text-4xl font-black text-white italic uppercase mb-6 md:mb-8 truncate leading-none">{gameState.playerName}</h3>
               
               <button 

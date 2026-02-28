@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Profile = require('../models/Profile');
 
 // Register
 router.post('/register', async (req, res) => {
@@ -45,6 +46,7 @@ router.post('/register', async (req, res) => {
                 id: user._id,
                 username: user.username,
                 email: user.email,
+                avatar: user.avatar,
                 status: user.status
             }
         });
@@ -95,6 +97,7 @@ router.post('/login', async (req, res) => {
                 id: user._id,
                 username: user.username,
                 email: user.email,
+                avatar: user.avatar,
                 status: user.status
             }
         });
@@ -122,6 +125,55 @@ router.get('/me', async (req, res) => {
         res.json(user);
     } catch (error) {
         res.status(401).json({ message: 'Token is not valid' });
+    }
+});
+
+// Update profile
+router.put('/profile', async (req, res) => {
+    try {
+        const token = req.header('x-auth-token');
+        if (!token) return res.status(401).json({ message: 'Not authorized' });
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const { username, avatar, bio } = req.body;
+
+        const user = await User.findById(decoded.id).populate('profile');
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Update User fields
+        if (username && username !== user.username) {
+            const existing = await User.findOne({ username });
+            if (existing) return res.status(400).json({ message: 'Username already taken' });
+            user.username = username;
+        }
+        if (avatar) user.avatar = avatar;
+
+        // Update Profile fields
+        let profile = await Profile.findOne({ userId: user._id });
+        if (!profile) {
+            profile = new Profile({ userId: user._id });
+        }
+        if (bio !== undefined) profile.bio = bio;
+
+        await user.save();
+        await profile.save();
+
+        res.json({
+            message: 'Profile updated successfully',
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                avatar: user.avatar,
+                profile: {
+                    ...profile.toObject(),
+                    bio: profile.bio
+                }
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 

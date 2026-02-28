@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { LogOut, AlertTriangle, Settings } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
+import { useAuth } from '@/context/AuthContext';
+import { getRank } from '@/lib/utils';
 import SettingsModal from '@/components/settings/SettingsModal';
 
 interface BattleHeaderProps {
@@ -27,9 +29,12 @@ export default function BattleHeader({
   onAbort,
   roomId
 }: BattleHeaderProps) {
-  const { t } = useLanguage();
+   const { t } = useLanguage();
   const { gameState } = useGame();
+  const { user } = useAuth();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const playerRank = getRank(user?.profile?.stats?.pvp?.matches || 0);
 
   return (
     <>
@@ -45,6 +50,7 @@ export default function BattleHeader({
             <div className="flex items-baseline gap-2 md:gap-3">
                 <div className="flex items-center gap-3">
                   <h1 className="text-base md:text-xl font-black text-white uppercase tracking-tighter truncate max-w-[150px] md:max-w-none">
+                    <span className="text-primary mr-2 opacity-80">{playerRank}</span>
                     {playerName || t('commander')} <span className="text-slate-600 mx-1">VS</span> <span className="text-red">{gameMode === 'PvE' ? t('ghost_ai') : (opponentName || t('opponent'))}</span>
                   </h1>
                   {gameMode !== 'PvE' && opponentStatus === 'disconnected' && (

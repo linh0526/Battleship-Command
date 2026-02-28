@@ -16,7 +16,7 @@ function createPlayer({ clientId, socketId, name, userId = null, fleet = [] }) {
     };
 }
 
-function createRoom({ roomId, players = [], mode = 'classic', isPvE = false }) {
+function createRoom({ roomId, players = [], mode = 'classic', isPvE = false, isRanked = false }) {
     return {
         id: roomId,
         players,
@@ -24,6 +24,7 @@ function createRoom({ roomId, players = [], mode = 'classic', isPvE = false }) {
         phase: GamePhase.WAITING,
         mode,
         isPvE,
+        isRanked,
         maxPlayers: 2, // Added maxPlayers property
         logs: [],
         createdAt: Date.now()

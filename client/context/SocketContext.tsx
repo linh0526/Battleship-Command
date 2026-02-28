@@ -11,9 +11,9 @@ interface SocketContextType {
   socket: Socket | null;
   isConnected: boolean;
   isInitialLoad: boolean; // Grace period for initial connection
-  joinRandomRoom: (nameOverride?: string, fleet?: any[], mode?: string) => void;
+  joinRandomRoom: (nameOverride?: string, fleet?: any[], mode?: string, isRanked?: boolean) => void;
   joinSpecificRoom: (targetId: string, nameOverride?: string, fleet?: any[]) => void;
-  createRoom: (nameOverride?: string, fleet?: any[], mode?: string) => void;
+  createRoom: (nameOverride?: string, fleet?: any[], mode?: string, isRanked?: boolean) => void;
   emitMove: (r: number, c: number) => void;
   emitFleetReady: (fleet: any[]) => void;
   emitUnready: () => void;
@@ -30,6 +30,7 @@ interface SocketContextType {
   emitStartMatch: () => void;
   updatePlayerName: (name: string) => void;
   clientId: string | null;
+  eloUpdate: { currentElo: number; change: number } | null;
 }
 
 const SocketContext = createContext<SocketContextType | undefined>(undefined);
@@ -53,6 +54,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsPlayingPvE, setRoomReady, setOpponentRoomReady,
     setOpponentStatus, setBattleMode, setGameMode 
   } = useGame();
+
+  const [eloUpdate, setEloUpdate] = useState<{ currentElo: number; change: number } | null>(null);
 
   // Grace period for initial connection
   useEffect(() => {
@@ -86,6 +89,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.log('   Socket ID:', s.id);
       console.log('   Client ID:', storedClientId);
       setIsConnected(true);
+      if (user?.id) {
+        s.emit('register_user', user.id);
+      }
     });
 
     s.on('disconnect', () => {
@@ -95,11 +101,18 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     s.on('room_joined', (data: { roomId: string, opponent?: any, mode?: 'classic' | 'salvo', isPvE?: boolean }) => {
       console.log('SERVER: room_joined event received for room:', data.roomId, 'Opponent data:', !!data.opponent, 'Mode:', data.mode, 'PvE:', data.isPvE);
+      
+      // Explicitly reset ready states to prevent state bleed between rooms/matches
+      setRoomReady(false);
+      setOpponentRoomReady(false);
+      setFleetReady(false);
+      setOpponentFleetReady(false);
+      setEloUpdate(null);
+      
       setRoomId(data.roomId);
       if (data.mode) setBattleMode(data.mode);
       if (data.opponent) {
         setOpponent(data.opponent);
-        setFleetReady(false);
         setOpponentFleetReady(data.opponent.fleetReady || false);
         setOpponentRoomReady(data.opponent.roomReady || false);
       }
@@ -190,6 +203,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     });
 
+    s.on('elo_update', (data: { currentElo: number; change: number }) => {
+      console.log('SERVER: elo_update received:', data);
+      setEloUpdate(data);
+    });
+
     setSocket(s);
 
     return () => {
@@ -197,12 +215,18 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, [setRoomId, setOpponent, setGameStatus, setTurn, addLog, setOpponentFleetReady, setRoomReady, setOpponentRoomReady, setOpponentStatus, setFleetReady, setBattleMode]);
 
-  const joinRandomRoom = useCallback((nameOverride?: string, fleet?: any[], mode?: string) => {
+  useEffect(() => {
+    if (socket && user?.id) {
+       socket.emit('register_user', user.id);
+    }
+  }, [socket, user?.id]);
+  const joinRandomRoom = useCallback((nameOverride?: string, fleet?: any[], mode?: string, isRanked?: boolean) => {
     if (socket) socket.emit('join_random', { 
         name: nameOverride || '', 
         userId: user?.id,
         fleet, 
-        mode: mode || 'classic' 
+        mode: mode || 'classic',
+        isRanked
     });
   }, [socket, user]);
 
@@ -215,12 +239,13 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
   }, [socket, user]);
 
-  const createRoom = useCallback((nameOverride?: string, fleet?: any[], mode?: string) => {
+  const createRoom = useCallback((nameOverride?: string, fleet?: any[], mode?: string, isRanked?: boolean) => {
     if (socket) socket.emit('create_room', { 
         name: nameOverride || '', 
         userId: user?.id,
         fleet, 
-        mode: mode || 'classic' 
+        mode: mode || 'classic',
+        isRanked
     });
   }, [socket, user]);
 
@@ -267,6 +292,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setOpponentFleetReady(false);
     setRoomReady(false);
     setOpponentRoomReady(false);
+    setEloUpdate(null);
     router.replace('/');
   }, [socket, setRoomId, setOpponent, setGameStatus, setFleetReady, setOpponentFleetReady, setRoomReady, setOpponentRoomReady, router]);
 
@@ -313,7 +339,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       emitRematchAccept, onRematchRequested, onRematchAccepted,
       leaveRoom, startPve, endPve,
       emitRoomReady, emitStartMatch,
-      updatePlayerName, clientId
+      updatePlayerName, clientId, eloUpdate
     }}>
       {children}
     </SocketContext.Provider>

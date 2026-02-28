@@ -9,12 +9,24 @@ interface User {
   username: string;
   email: string;
   status: 'active' | 'banned' | 'unverified';
+  avatar?: string;
+  profile?: {
+    stats: {
+      pvp: {
+        matches: number;
+        wins: number;
+        elo: number;
+      }
+    }
+  }
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isAuthOpen: boolean;
+  setIsAuthOpen: (open: boolean) => void;
   login: (token: string, userData: User) => void;
   logout: () => void;
 }
@@ -31,6 +43,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info') => {
@@ -49,10 +62,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         const userData = await response.json();
         setUser({
-          id: userData._id,
+          id: String(userData._id),
           username: userData.username,
           email: userData.email,
-          status: userData.status
+          status: userData.status,
+          avatar: userData.avatar,
+          profile: userData.profile
         });
       } else {
         localStorage.removeItem('auth-token');
@@ -75,7 +90,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = (token: string, userData: User) => {
     localStorage.setItem('auth-token', token);
-    setUser(userData);
+    setUser({
+      ...userData,
+      avatar: userData.avatar
+    });
   };
 
   const logout = () => {
@@ -88,6 +106,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       isAuthenticated: !!user,
       isLoading,
+      isAuthOpen,
+      setIsAuthOpen,
       login,
       logout
     }}>

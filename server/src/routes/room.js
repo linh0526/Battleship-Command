@@ -54,7 +54,8 @@ router.get('/exists/:roomId', (req, res) => {
         maxPlayers: maxPlayers,
         canJoin: canJoin, // General public joinability
         canReconnect: true, // Assuming reconnection is always allowed if you are in playerIds
-        playerIds: playerIds
+        playerIds: playerIds,
+        isRanked: !!room.isRanked
     });
 });
 

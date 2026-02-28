@@ -10,18 +10,23 @@ export interface ActiveRoom {
   status: RoomStatus;
   statusColor: string;
   mode: 'classic' | 'salvo' | string;
+  isRanked?: boolean;
 }
 
 interface ActiveOperationsProps {
   activeRooms: ActiveRoom[];
   isConnected: boolean;
-  onJoinRoom: (id: string) => void;
+  isAuthenticated: boolean;
+  setIsAuthOpen: (open: boolean) => void;
+  onJoinRoom: (id: string, isRanked?: boolean) => void;
   t: (key: string, params?: Record<string, string>) => string;
 }
 
 const ActiveOperations = ({
   activeRooms,
   isConnected,
+  isAuthenticated,
+  setIsAuthOpen,
   onJoinRoom,
   t,
 }: ActiveOperationsProps) => {
@@ -52,8 +57,8 @@ const ActiveOperations = ({
         </div>
       </div>
 
-      <div className="glass-panel overflow-hidden bg-[#1e293b]/20 border-slate-800 w-full flex flex-col flex-1 min-h-0">
-        <div className="overflow-x-auto flex-1 custom-scroll">
+      <div className="glass-panel overflow-hidden bg-[#1e293b]/20 border-slate-800 w-full flex flex-col flex-1 min-h-0 relative">
+        <div className={`overflow-x-auto flex-1 custom-scroll ${!isAuthenticated ? 'blur-[8px] pointer-events-none' : ''}`}>
           <table className="w-full text-xs font-bold uppercase tracking-widest min-w-[800px]">
             <thead className="sticky top-0 bg-slate-900/90 backdrop-blur z-10 border-b border-slate-800">
               <tr className="text-slate-500">
@@ -68,9 +73,16 @@ const ActiveOperations = ({
               {activeRooms.length > 0 ? activeRooms.map((op) => (
                 <tr key={op.id} className="hover:bg-primary/5 transition-colors group cursor-pointer border-b border-slate-800/50">
                   <td className="px-4 py-3 border-r border-slate-800/30">
-                    <div className="text-left">
-                      <p className="text-white text-[13px] tracking-normal mb-0.5 whitespace-nowrap">{op.name}</p>
-                      <p className="text-slate-500 text-[10px] font-mono leading-none tracking-normal italic">ID: {op.id.substring(0,8)}</p>
+                    <div className="text-left flex items-center gap-3">
+                      <div className="flex flex-col">
+                        <p className="text-white text-[13px] tracking-normal mb-0.5 whitespace-nowrap flex items-center gap-2">
+                          {op.name}
+                          {op.isRanked && (
+                            <span className="text-[8px] bg-amber-500/20 text-amber-500 border border-amber-500/40 px-1 py-0 rounded font-black tracking-widest">RANKED</span>
+                          )}
+                        </p>
+                        <p className="text-slate-500 text-[10px] font-mono leading-none tracking-normal italic">ID: {op.id.substring(0,8)}</p>
+                      </div>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-center border-r border-slate-800/30">
@@ -98,7 +110,7 @@ const ActiveOperations = ({
                           onClick={(e) => {
                             if (op.status !== 'WAITING') return;
                             e.stopPropagation();
-                            onJoinRoom(op.id);
+                            onJoinRoom(op.id, op.isRanked);
                           }}
                           className={`px-4 py-1.5 rounded-lg transition-all font-black text-[11px] ${
                             op.status === 'WAITING' 
@@ -120,13 +132,37 @@ const ActiveOperations = ({
             </tbody>
           </table>
         </div>
+
+        {/* AUTH OVERLAY FOR SCANNING */}
+        {!isAuthenticated && (
+           <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center p-6 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-white/5 flex items-center justify-center mb-4 shadow-2xl">
+                 <Globe className="w-8 h-8 text-primary/40" />
+              </div>
+              <p className="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-4 max-w-[200px] leading-relaxed">
+                 {t('login_to_scan')}
+              </p>
+              <button 
+                onClick={() => setIsAuthOpen(true)}
+                className="px-6 py-2.5 bg-primary hover:bg-blue-600 text-white rounded-xl transition-all font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20"
+              >
+                {t('login')}
+              </button>
+           </div>
+        )}
         
         <div className="p-4 bg-slate-900/40 border-t border-slate-800 flex justify-between items-center shrink-0">
           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-            {t('fleet_scanning')} {t('sectors_detected', { count: activeRooms.length.toString() })}
+            {isAuthenticated ? (
+               `${t('fleet_scanning')} ${t('sectors_detected', { count: activeRooms.length.toString() })}`
+            ) : (
+               t('active_ops_desc')
+            )}
           </p>
           <div className="flex gap-4">
-            <button className="p-2 bg-slate-800/50 rounded-lg text-slate-500 hover:text-white transition-colors"><RefreshCw className="w-3 h-3" /></button>
+            <button className="p-2 bg-slate-800/50 rounded-lg text-slate-500 hover:text-white transition-colors" disabled={!isAuthenticated}>
+               <RefreshCw className="w-3 h-3" />
+            </button>
           </div>
         </div>
       </div>

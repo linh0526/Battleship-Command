@@ -11,10 +11,19 @@ module.exports = (io, socket) => {
      * CREATE ROOM - Tạo room mới (Open Room Model)
      * Khi player bấm "Tìm trận" hoặc "Tạo phòng"
      */
-    socket.on('create_room', (data) => {
+    const handleCreate = (data) => {
         const playerName = data?.name || 'Commander';
-        const userId = data?.userId || null; // For authenticated users
+        const userId = data?.userId || null;
         const mode = data?.mode || 'classic';
+        const isRanked = !!data?.isRanked;
+
+        console.log(`[ROOM] handleCreate: name=${playerName}, userId=${userId}, ranked=${isRanked}`);
+
+        if (isRanked && !userId) {
+            socket.emit('error', { msg: 'Yêu cầu đăng nhập để tham gia đấu PvP Ranked!' });
+            return;
+        }
+
         socket.playerName = playerName;
         
         // Cleanup: Leave any existing room
@@ -27,7 +36,7 @@ module.exports = (io, socket) => {
         } while (rooms.has(roomId));
 
         socket.join(roomId);
-        console.log(`[ROOM] Created: ${roomId} by ${playerName} (Mode: ${mode})`);
+        console.log(`[ROOM] Created: ${roomId} by ${playerName} (Mode: ${mode}${isRanked ? ', Ranked' : ''})`);
 
         const player = createPlayer({ 
             clientId: socket.clientId, 
@@ -36,11 +45,19 @@ module.exports = (io, socket) => {
             name: playerName 
         });
 
-        const room = createRoom({ roomId, players: [player], mode });
+        const room = createRoom({ roomId, players: [player], mode, isRanked });
         rooms.set(roomId, room);
 
-        socket.emit('room_joined', { roomId, mode, opponent: null });
+        socket.emit('room_joined', { roomId, mode, opponent: null, isRanked });
         io.emit('rooms_update', getRoomsList());
+    };
+
+    /**
+     * CREATE ROOM - Tạo room mới (Open Room Model)
+     * Khi player bấm "Tìm trận" hoặc "Tạo phòng"
+     */
+    socket.on('create_room', (data) => {
+        handleCreate(data);
     });
 
     /**
@@ -50,11 +67,20 @@ module.exports = (io, socket) => {
         const playerName = data?.name || 'Commander';
         const userId = data?.userId || null;
         const mode = data?.mode || 'classic';
+        const isRanked = data?.isRanked !== undefined ? !!data.isRanked : true;
+
+        console.log(`[RANKED] join_random request: name=${playerName}, userId=${userId}, ranked=${isRanked}`);
+
+        if (!userId) {
+            socket.emit('error', { msg: 'Yêu cầu đăng nhập để tham gia đấu PvP Ranked!' });
+            return;
+        }
+
         socket.playerName = playerName;
         
         handlePlayerLeave(io, socket, 'left');
 
-        // Tìm room WAITING (1/2 players)
+        // Tìm room WAITING (1/2 players) - Chỉ tìm Ranked room
         let targetRoom = null;
         let targetRoomId = null;
 
@@ -65,6 +91,7 @@ module.exports = (io, socket) => {
                 room.phase === GamePhase.WAITING &&
                 activePlayers.length < 2 &&
                 room.mode === mode &&
+                room.isRanked === isRanked && 
                 !room.isPvE
             ) {
                 targetRoom = room;
@@ -95,14 +122,14 @@ module.exports = (io, socket) => {
             const hostInfo = { name: host.name, fleetReady: false, roomReady: false, status: host.status };
             const guestInfo = { name: playerName, fleetReady: false, roomReady: false, status: 'connected' };
 
-            socket.emit('room_joined', { roomId: targetRoomId, opponent: hostInfo, mode: targetRoom.mode });
+            socket.emit('room_joined', { roomId: targetRoomId, opponent: hostInfo, mode: targetRoom.mode, isRanked });
             io.to(host.socketId).emit('opponent_joined', guestInfo);
             
             io.emit('rooms_update', getRoomsList());
-            console.log(`[ROOM] ${playerName} joined ${targetRoomId} (Random)`);
+            console.log(`[${isRanked ? 'RANKED' : 'PVP'}] ${playerName} joined ${targetRoomId}`);
         } else {
             // Không tìm thấy room -> Tạo room mới
-            socket.emit('create_room', { name: playerName, userId, mode });
+            handleCreate({ name: playerName, userId, mode, isRanked });
         }
     });
 
@@ -114,6 +141,8 @@ module.exports = (io, socket) => {
         const userId = data?.userId || null;
         const targetId = data?.targetId;
         const clientId = socket.clientId;
+
+        // Custom join allowed for guests
         socket.playerName = playerName;
 
         if (!targetId) {
@@ -147,7 +176,8 @@ module.exports = (io, socket) => {
                         roomReady: opponent.roomReady,
                         status: opponent.status 
                     } : null,
-                    mode: room.mode
+                    mode: room.mode,
+                    isRanked: room.isRanked
                 });
 
                 // Restore game state
@@ -207,11 +237,11 @@ module.exports = (io, socket) => {
         const hostInfo = { name: host.name, fleetReady: false, roomReady: false, status: host.status };
         const guestInfo = { name: playerName, fleetReady: false, roomReady: false, status: 'connected' };
 
-        socket.emit('room_joined', { roomId: targetId, opponent: hostInfo, mode: room.mode });
+        socket.emit('room_joined', { roomId: targetId, opponent: hostInfo, mode: room.mode, isRanked: room.isRanked });
         io.to(host.socketId).emit('opponent_joined', guestInfo);
         
         io.emit('rooms_update', getRoomsList());
-        console.log(`[ROOM] ${playerName} joined ${targetId}`);
+        console.log(`[ROOM] ${playerName} joined ${targetId} (${room.isRanked ? 'Ranked' : 'Custom'})`);
     });
 
     /**

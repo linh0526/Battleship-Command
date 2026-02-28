@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Bell, User, Languages, Settings, LogOut, CheckCircle, ShieldCheck, Users, History, UserCircle, MessageSquare } from 'lucide-react';
@@ -11,18 +11,20 @@ import { useAuth, useToast } from '@/context/AuthContext';
 import { useSocket } from '@/context/SocketContext';
 import SettingsModal from '@/components/settings/SettingsModal';
 import AuthModal from '@/components/auth/AuthModal';
+import { getRank } from '@/lib/utils';
 import styles from './Header.module.css';
 
 export default function Header() {
   const pathname = usePathname();
   const { language, setLanguage, t } = useLanguage();
   const { gameState } = useGame();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, isAuthOpen, setIsAuthOpen } = useAuth();
   const { show: showToast } = useToast();
   const { joinSpecificRoom } = useSocket();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const userRank = getRank(user?.profile?.stats?.pvp?.matches || 0);
 
   const handleSearchJoin = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
@@ -88,25 +90,32 @@ export default function Header() {
               <div className="flex items-center gap-2 md:gap-4 sm:gap-6 border-l border-slate-800/50 h-8 md:h-10 pl-3 md:pl-8">
                 <button 
                   onClick={() => setIsSettingsOpen(true)}
-                  className="p-1.5 md:p-2 text-slate-400 hover:text-white transition-all hover:scale-110"
+                  className="p-1.5 md:p-2 text-slate-400 hover:text-white transition-all hover:scale-110 relative"
                   title={t('settings')}
                 >
                   <Settings className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
                 
+                {isAuthenticated && (
+                    <NotificationsDropdown t={t} />
+                )}
+
                 {isAuthenticated ? (
                   <div className="flex items-center gap-2 md:gap-3">
                     <div className="hidden xl:flex flex-col items-end mr-1">
-                       <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{t('commander')}</span>
+                       <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{userRank}</span>
                        <span className="text-xs font-black uppercase text-white tracking-widest leading-none">{user?.username}</span>
                     </div>
                     <div className="relative group/user">
                        <button className="w-9 h-9 md:w-10 md:h-10 rounded-xl border-2 border-primary/40 bg-slate-800 flex items-center justify-center overflow-hidden hover:border-primary transition-all shadow-xl shadow-primary/10">
-                          <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username}`} alt="User" />
+                          <img 
+                            src={(user?.avatar && user.avatar !== '/default-avatar.png') ? user.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'Guest'}`} 
+                            alt="User" 
+                          />
                        </button>
                        <div className="absolute top-12 right-0 w-56 bg-[#0a0e1a]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2 opacity-0 invisible group-hover/user:opacity-100 group-hover/user:visible transition-all translate-y-2 group-hover/user:translate-y-0 z-50 shadow-2xl">
                           <div className="px-3 py-2 border-b border-white/5 mb-1 flex flex-col gap-0.5">
-                             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-tight">{t('commander')}</span>
+                             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-tight">{userRank}</span>
                              <span className="text-[11px] font-black text-white uppercase tracking-wider">{user?.username}</span>
                           </div>
                           
@@ -128,6 +137,14 @@ export default function Header() {
                           </Link>
 
                           <div className="h-px bg-white/5 my-1" />
+
+                          <Link 
+                            href="/friends"
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest"
+                          >
+                             <Users className="w-4 h-4 text-emerald-500" />
+                             {t('friends')}
+                          </Link>
 
                           <Link 
                             href="/feedback"
@@ -208,4 +225,83 @@ function NavLink({
       {active && <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary shadow-[0_1px_8px_rgba(25,93,230,0.6)]"></div>}
     </Link>
   );
+}
+
+function NotificationsDropdown({ t }: { t: any }) {
+    const { socket } = useSocket();
+    const [open, setOpen] = useState(false);
+    const [requests, setRequests] = useState<any[]>([]);
+
+    const fetchRequests = async () => {
+        const token = localStorage.getItem('auth-token');
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/social/requests`, {
+                headers: { 'x-auth-token': token || '' }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setRequests(data.incoming || []);
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    useEffect(() => {
+        fetchRequests();
+        const interval = setInterval(fetchRequests, 30000); // Check every 30 seconds
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        if (!socket) return;
+        
+        socket.on('social_update', fetchRequests);
+        
+        return () => {
+            socket.off('social_update', fetchRequests);
+        };
+    }, [socket]);
+
+    return (
+        <div className="relative group/notif">
+            <button 
+                onClick={() => setOpen(!open)}
+                className="p-1.5 md:p-2 text-slate-400 hover:text-white transition-all hover:scale-110 relative"
+            >
+                <Bell className="w-5 h-5 md:w-6 md:h-6" />
+                {requests.length > 0 && (
+                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-error animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.8)]" />
+                )}
+            </button>
+            <div className={`absolute top-12 right-0 w-72 bg-[#0a0e1a]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2 transition-all z-50 shadow-2xl ${
+                open ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'
+            }`}>
+               <div className="px-3 py-2 border-b border-white/5 mb-1 flex justify-between items-center">
+                   <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{t('pending_friend_requests')}</span>
+                   {requests.length > 0 && (
+                       <span className="text-[9px] font-black text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-md">{requests.length}</span>
+                   )}
+               </div>
+               
+               <div className="max-h-64 overflow-y-auto custom-scrollbar flex flex-col gap-1">
+                   {requests.length === 0 ? (
+                       <div className="p-4 text-center text-[10px] font-bold text-slate-600 italic">
+                           {t('no_new_notifications')}
+                       </div>
+                   ) : (
+                       requests.map(req => (
+                           <Link key={req.requestId} href="/friends" className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-xl transition-all" onClick={() => setOpen(false)}>
+                               <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${req.user.username}`} className="w-8 h-8 rounded-lg bg-slate-800" />
+                               <div className="flex flex-col">
+                                   <span className="text-[11px] font-black text-white uppercase">{req.user.username}</span>
+                                   <span className="text-[9px] font-bold text-slate-500">wants to connect</span>
+                               </div>
+                           </Link>
+                       ))
+                   )}
+               </div>
+            </div>
+        </div>
+    );
 }

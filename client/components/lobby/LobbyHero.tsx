@@ -71,8 +71,8 @@ export default function LobbyHero({
           >
             <Plus className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
             <div className="text-center px-1">
-              <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-500 group-hover:text-slate-300 block whitespace-nowrap">{t('create_room')}</span>
-              <span className="text-[7px] font-medium text-slate-600 uppercase tracking-widest block mt-0.5">Custom Ops</span>
+              <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.05em] text-white group-hover:text-primary block whitespace-nowrap leading-tight">{t('create_room')}</span>
+              <span className="text-[7px] font-medium text-slate-600 uppercase tracking-widest block mt-0.5">FRIENDLY MATCH</span>
             </div>
           </button>
           

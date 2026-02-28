@@ -29,6 +29,10 @@ const MatchHistorySchema = new mongoose.Schema({
         enum: ['PvP', 'PvE'],
         required: true
     },
+    isRanked: {
+        type: Boolean,
+        default: false
+    },
     
     // Shots stats - CHỈ lưu tổng số, KHÔNG lưu từng phát bắn
     shots: {

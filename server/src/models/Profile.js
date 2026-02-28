@@ -28,6 +28,7 @@ const ProfileSchema = new mongoose.Schema({
                 hit: { type: Number, default: 0 }
             },
             accuracy: { type: Number, default: 0 }, // % - cached for performance
+            elo: { type: Number, default: 0 },
             avgShotsPerMatch: { type: Number, default: 0 }
         },
         pve: {

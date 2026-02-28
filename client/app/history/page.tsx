@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { useLanguage } from '@/context/LanguageContext';
-import { History, Swords, Trophy, Target, Clock, Shield, ChevronRight } from 'lucide-react';
+import { History, Swords, Trophy, Target, Clock, Shield, ChevronRight, UserPlus } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -12,11 +13,13 @@ export default function HistoryPage() {
   const [history, setHistory] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
 
+    const router = useRouter();
+
   React.useEffect(() => {
     const fetchHistory = async () => {
         const token = localStorage.getItem('auth-token');
         if (!token) {
-            setLoading(false);
+            router.push('/');
             return;
         }
 
@@ -100,9 +103,16 @@ export default function HistoryPage() {
                             }`}>
                                 {match.result === 'win' ? 'VICTORY' : 'DEFEAT'}
                             </span>
-                            <span className="text-slate-600">/</span>
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                                 {match.mode}
+                            </span>
+                            <span className="text-slate-600">/</span>
+                            <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border ${
+                                match.isRanked 
+                                ? 'border-amber-500/30 text-amber-500/80' 
+                                : 'border-slate-500/30 text-slate-500/80'
+                            }`}>
+                                {match.isRanked ? 'RANKED' : 'CUSTOM'}
                             </span>
                         </div>
                         <h3 className="text-lg font-black text-white uppercase tracking-tight">
@@ -127,9 +137,9 @@ export default function HistoryPage() {
                         </div>
                     </div>
 
-                    <button className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary text-white transition-all group/btn">
-                        <ChevronRight className="w-5 h-5 group-hover/btn:translate-x-0.5 transition-transform" />
-                    </button>
+                    {match.opponentId && match.mode === 'PvP' && (
+                        <AddFriendButton opponentId={match.opponentId} />
+                    )}
                 </div>
               </div>
             </motion.div>
@@ -137,6 +147,54 @@ export default function HistoryPage() {
         </div>
     </div>
   );
+}
+
+function AddFriendButton({ opponentId }: { opponentId: string }) {
+    const { t } = useLanguage();
+    const [status, setStatus] = React.useState<'idle' | 'loading' | 'sent'>('idle');
+
+    const handleAddFriend = async () => {
+        if (status !== 'idle') return;
+        setStatus('loading');
+        const token = localStorage.getItem('auth-token');
+        try {
+            const res = await fetch(`${API_URL}/api/social/request`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-auth-token': token || '' 
+                },
+                body: JSON.stringify({ recipientId: opponentId })
+            });
+            if (res.ok) {
+                setStatus('sent');
+            } else {
+                setStatus('idle');
+            }
+        } catch (err) {
+            console.error(err);
+            setStatus('idle');
+        }
+    };
+
+    if (status === 'sent') {
+        return (
+            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-500 rounded-xl border border-emerald-500/20 text-[10px] font-black uppercase">
+                {t('request_sent')}
+            </div>
+        );
+    }
+
+    return (
+        <button 
+            onClick={handleAddFriend}
+            disabled={status === 'loading'}
+            className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-xl border border-primary/20 transition-all text-[10px] font-black uppercase"
+        >
+            <UserPlus className="w-4 h-4" />
+            {status === 'loading' ? '...' : t('send_friend_request')}
+        </button>
+    );
 }
 
 function StatsCard({ label, value, icon, color }: any) {
