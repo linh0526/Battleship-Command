@@ -68,8 +68,13 @@ export default function TopCommanders({ t }: TopCommandersProps) {
                     }`}>{pro.level}</div>
                  </div>
                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-black text-white truncate">{pro.name}</p>
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{pro.elo} ELO // {pro.wins} {t('wins_label')}</p>
+                    <p className="text-sm font-black text-white truncate group-hover:text-primary transition-colors">{pro.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-sm font-black text-primary drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]">{pro.elo}</span>
+                      <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">CP</span>
+                      <span className="text-[10px] text-slate-700 mx-1">|</span>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{pro.wins} {t('wins_label')}</span>
+                    </div>
                  </div>
               </div>
             ))

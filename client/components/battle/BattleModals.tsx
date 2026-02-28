@@ -238,11 +238,11 @@ export default function BattleModals({
                     className="mt-2 flex flex-col items-center gap-2"
                   >
                     <div className="bg-slate-900/80 border border-white/10 px-6 py-3 rounded-2xl shadow-2xl flex flex-col items-center">
-                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Rank Adjustment</span>
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{t('rank_adjustment')}</span>
                       <div className="flex items-center gap-4">
                          <div className="flex flex-col items-center">
                            <span className="text-2xl font-black text-white">{eloUpdate.currentElo}</span>
-                           <span className="text-[8px] font-black text-slate-600 uppercase">Current ELO</span>
+                           <span className="text-[8px] font-black text-slate-600 uppercase">CP</span>
                          </div>
                          <div className="h-8 w-px bg-white/10"></div>
                          <div className="flex flex-col items-center">
@@ -250,7 +250,7 @@ export default function BattleModals({
                              {eloUpdate.change >= 0 ? '+' : ''}{eloUpdate.change}
                              {eloUpdate.change >= 0 ? <Zap className="w-4 h-4" /> : <Shield className="w-4 h-4 opacity-50" />}
                            </span>
-                           <span className="text-[8px] font-black text-slate-600 uppercase">Points Delta</span>
+                           <span className="text-[8px] font-black text-slate-600 uppercase">{t('points_delta')}</span>
                          </div>
                       </div>
                     </div>
@@ -260,7 +260,7 @@ export default function BattleModals({
                         transition={{ duration: 1.5, repeat: Infinity }}
                         className="text-emerald-400 text-xs font-black uppercase tracking-widest"
                       >
-                        Performance Excellent
+                        {t('performance_excellent')}
                       </motion.span>
                     )}
                   </motion.div>

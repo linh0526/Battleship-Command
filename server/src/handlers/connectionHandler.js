@@ -39,7 +39,17 @@ const handlePlayerLeave = (io, socket, reason = 'left') => {
                                 
                                 // Save Match History (Opponent Disconnected)
                                 const matchData = extractMatchDataFromRoom(currentRoom, remainingPlayer.clientId, 'OPPONENT_LEFT');
-                                saveMatchAndUpdateProfiles(matchData).catch(err => console.error('[GAME] Failed to save match history:', err));
+                                saveMatchAndUpdateProfiles(matchData).then(result => {
+                                    if (result && result.eloResults) {
+                                        const eloData = result.eloResults[remainingPlayer.userId?.toString()];
+                                        if (eloData) {
+                                            io.to(remainingPlayer.socketId).emit('elo_update', { 
+                                                currentElo: eloData.currentElo,
+                                                change: eloData.change 
+                                            });
+                                        }
+                                    }
+                                }).catch(err => console.error('[GAME] Failed to save match history:', err));
                             }
                             io.to(remainingPlayer.socketId).emit('opponent_left');
                         }
@@ -67,7 +77,17 @@ const handlePlayerLeave = (io, socket, reason = 'left') => {
                 
                 // Save Match History (Opponent Left)
                 const matchData = extractMatchDataFromRoom(room, remaining.clientId, 'OPPONENT_LEFT');
-                saveMatchAndUpdateProfiles(matchData).catch(err => console.error('[GAME] Failed to save match history:', err));
+                saveMatchAndUpdateProfiles(matchData).then(result => {
+                    if (result && result.eloResults) {
+                        const eloData = result.eloResults[remaining.userId?.toString()];
+                        if (eloData) {
+                            io.to(remaining.socketId).emit('elo_update', { 
+                                currentElo: eloData.currentElo,
+                                change: eloData.change 
+                            });
+                        }
+                    }
+                }).catch(err => console.error('[GAME] Failed to save match history:', err));
             }
             io.to(remaining.socketId).emit('opponent_left');
         }

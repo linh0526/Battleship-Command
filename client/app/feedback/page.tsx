@@ -158,7 +158,7 @@ export default function FeedbackPage() {
               <div className="mt-12 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6">
                  <div className="flex items-center gap-3 opacity-50">
                     <CheckCircle className="w-4 h-4 text-emerald-500" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">from linh0526 with ❤️</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">by linh0526 with ❤️</span>
                  </div>
                  <div className="flex items-center gap-3 opacity-50">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />

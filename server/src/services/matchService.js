@@ -23,7 +23,8 @@ async function saveMatchAndUpdateProfiles(matchData) {
         return;
     }
 
-    console.log(`[MATCH] Processing: room=${roomId}, ranked=${matchData.isRanked}, mode=${mode}`);
+    console.log(`[MATCH] Processing: room=${roomId}, isRanked=${matchData.isRanked}, mode=${mode}, players=${players.length}`);
+    console.log(`[MATCH] Players with ID: ${players.filter(p => p.userId).length}`);
 
     try {
         const registreredPlayers = players.filter(p => p.userId);
@@ -61,37 +62,40 @@ async function saveMatchAndUpdateProfiles(matchData) {
             let profileA = await Profile.findOne({ userId: playerA.userId });
             let profileB = await Profile.findOne({ userId: playerB.userId });
 
-            if (profileA && profileB) {
-                const ratingA = profileA.stats.pvp.elo || 0;
-                const ratingB = profileB.stats.pvp.elo || 0;
+            const ratingA = profileA?.stats?.pvp?.elo || 0;
+            const ratingB = profileB?.stats?.pvp?.elo || 0;
 
-                const scoreA = playerA.result === 'win' ? 1 : (playerA.result === 'draw' ? 0.5 : 0);
-                const scoreB = playerB.result === 'win' ? 1 : (playerB.result === 'draw' ? 0.5 : 0);
+            const scoreA = playerA.result === 'win' ? 1 : (playerA.result === 'draw' ? 0.5 : 0);
+            const scoreB = playerB.result === 'win' ? 1 : (playerB.result === 'draw' ? 0.5 : 0);
 
-                const changeA = calculateEloChange(ratingA, ratingB, scoreA);
-                const changeB = calculateEloChange(ratingB, ratingA, scoreB);
+            const changeA = calculateEloChange(ratingA, ratingB, scoreA);
+            const changeB = calculateEloChange(ratingB, ratingA, scoreB);
 
-                eloResults[playerA.userId] = changeA;
-                eloResults[playerB.userId] = changeB;
+            // Đảm bảo key là string để tránh lỗi mismatch khi truy xuất
+            const userIdA = playerA.userId.toString();
+            const userIdB = playerB.userId.toString();
 
-                console.log(`[ELO] ${playerA.name}: ${ratingA} -> ${ratingA + changeA} (${changeA > 0 ? '+' : ''}${changeA})`);
-                console.log(`[ELO] ${playerB.name}: ${ratingB} -> ${ratingB + changeB} (${changeB > 0 ? '+' : ''}${changeB})`);
-            }
+            eloResults[userIdA] = { change: changeA, currentElo: ratingA + changeA };
+            eloResults[userIdB] = { change: changeB, currentElo: ratingB + changeB };
+
+            console.log(`[ELO] ${playerA.name}: ${ratingA} -> ${ratingA + changeA} (${changeA > 0 ? '+' : ''}${changeA})`);
+            console.log(`[ELO] ${playerB.name}: ${ratingB} -> ${ratingB + changeB} (${changeB > 0 ? '+' : ''}${changeB})`);
         }
 
         // 3. UPDATE PROFILES
         const profilePromises = players.map(async (player) => {
             if (!player.userId) return; 
             if (matchData.isRanked || mode === 'PvE') {
-                const eloChange = eloResults[player.userId] || 0;
+                const eloData = eloResults[player.userId?.toString()];
+                const eloChange = eloData ? eloData.change : 0;
                 await updatePlayerProfile(player, mode, duration, eloChange);
             }
         });
 
         await Promise.all(profilePromises);
         
-        // Return elo changes for front-end push
-        return { eloChanges: eloResults };
+        // Return elo changes and new elo for front-end push
+        return { eloResults };
 
     } catch (error) {
         console.error('[MATCH] Error saving match:', error);
@@ -138,7 +142,12 @@ async function updatePlayerProfile(playerData, mode, duration, eloChange = 0) {
             : 0;
 
         if (statsKey === 'pvp') {
-            stats.elo = (stats.elo || 0) + eloChange;
+            // Nếu chưa có điểm (0) và chưa đấu trận nào, bắt đầu từ 1000
+            if ((stats.elo === 0 || !stats.elo) && stats.matches <= 1) {
+                stats.elo = 1000 + eloChange;
+            } else {
+                stats.elo = (stats.elo || 1000) + eloChange;
+            }
         }
 
         stats.avgShotsPerMatch = stats.matches > 0

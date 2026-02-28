@@ -227,7 +227,7 @@ function LobbyContent() {
     setCustomGameMode('classic');
     if (isAuthenticated && user) {
       setPlayerName(user.username);
-      createRoom(user.username, undefined, 'classic');
+      createRoom(user.username, undefined, 'classic', true);
     } else {
       setPendingAction('create');
       setShowNameModal(true);

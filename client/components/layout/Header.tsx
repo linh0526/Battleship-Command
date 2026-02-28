@@ -22,6 +22,7 @@ export default function Header() {
   const { show: showToast } = useToast();
   const { joinSpecificRoom } = useSocket();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const userRank = getRank(user?.profile?.stats?.pvp?.matches || 0);
@@ -106,65 +107,87 @@ export default function Header() {
                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{userRank}</span>
                        <span className="text-xs font-black uppercase text-white tracking-widest leading-none">{user?.username}</span>
                     </div>
-                    <div className="relative group/user">
-                       <button className="w-9 h-9 md:w-10 md:h-10 rounded-xl border-2 border-primary/40 bg-slate-800 flex items-center justify-center overflow-hidden hover:border-primary transition-all shadow-xl shadow-primary/10">
-                          <img 
-                            src={(user?.avatar && user.avatar !== '/default-avatar.png') ? user.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'Guest'}`} 
-                            alt="User" 
-                          />
-                       </button>
-                       <div className="absolute top-12 right-0 w-56 bg-[#0a0e1a]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2 opacity-0 invisible group-hover/user:opacity-100 group-hover/user:visible transition-all translate-y-2 group-hover/user:translate-y-0 z-50 shadow-2xl">
-                          <div className="px-3 py-2 border-b border-white/5 mb-1 flex flex-col gap-0.5">
-                             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-tight">{userRank}</span>
-                             <span className="text-[11px] font-black text-white uppercase tracking-wider">{user?.username}</span>
-                          </div>
-                          
-                          <Link 
-                            href="/profile"
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest"
-                          >
-                             <UserCircle className="w-4 h-4 text-primary" />
-                             {t('profile')}
-                          </Link>
-                          
-
-                          <Link 
-                            href="/history"
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest"
-                          >
-                             <History className="w-4 h-4 text-amber-500" />
-                             {t('battle_history')}
-                          </Link>
-
-                          <div className="h-px bg-white/5 my-1" />
-
-                          <Link 
-                            href="/friends"
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest"
-                          >
-                             <Users className="w-4 h-4 text-emerald-500" />
-                             {t('friends')}
-                          </Link>
-
-                          <Link 
-                            href="/feedback"
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest"
-                          >
-                             <MessageSquare className="w-4 h-4 text-primary" />
-                             {t('feedback')}
-                          </Link>
-                          
-                          <div className="h-px bg-white/5 my-1" />
-                          
-                          <button 
-                            onClick={handleLogout}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-error hover:bg-error/10 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest"
-                          >
-                             <LogOut className="w-4 h-4" />
-                             {t('logout')}
-                          </button>
-                       </div>
-                    </div>
+                     <div className="relative">
+                        <button 
+                          onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                          className={`w-9 h-9 md:w-10 md:h-10 rounded-xl border-2 bg-slate-800 flex items-center justify-center overflow-hidden transition-all shadow-xl shadow-primary/10 ${isUserMenuOpen ? 'border-primary ring-2 ring-primary/20' : 'border-primary/40 hover:border-primary'}`}
+                        >
+                           <img 
+                             src={(user?.avatar && user.avatar !== '/default-avatar.png') ? user.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'Guest'}`} 
+                             alt="User" 
+                           />
+                        </button>
+                        
+                        <AnimatePresence>
+                          {isUserMenuOpen && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)} />
+                              <motion.div 
+                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                className="absolute top-12 right-0 w-56 bg-[#0a0e1a]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2 z-50 shadow-2xl"
+                              >
+                                 <div className="px-3 py-2 border-b border-white/5 mb-1 flex flex-col gap-0.5">
+                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-tight">{userRank}</span>
+                                    <span className="text-[11px] font-black text-white uppercase tracking-wider">{user?.username}</span>
+                                 </div>
+                                 
+                                 <Link 
+                                   href="/profile"
+                                   onClick={() => setIsUserMenuOpen(false)}
+                                   className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest"
+                                 >
+                                    <UserCircle className="w-4 h-4 text-primary" />
+                                    {t('profile')}
+                                 </Link>
+                                 
+                                 <Link 
+                                   href="/history"
+                                   onClick={() => setIsUserMenuOpen(false)}
+                                   className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest"
+                                 >
+                                    <History className="w-4 h-4 text-amber-500" />
+                                    {t('battle_history')}
+                                 </Link>
+   
+                                 <div className="h-px bg-white/5 my-1" />
+   
+                                 <Link 
+                                   href="/friends"
+                                   onClick={() => setIsUserMenuOpen(false)}
+                                   className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest"
+                                 >
+                                    <Users className="w-4 h-4 text-emerald-500" />
+                                    {t('friends')}
+                                 </Link>
+   
+                                 <Link 
+                                   href="/feedback"
+                                   onClick={() => setIsUserMenuOpen(false)}
+                                   className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest"
+                                 >
+                                    <MessageSquare className="w-4 h-4 text-primary" />
+                                    {t('feedback')}
+                                 </Link>
+                                 
+                                 <div className="h-px bg-white/5 my-1" />
+                                 
+                                 <button 
+                                   onClick={() => {
+                                     handleLogout();
+                                     setIsUserMenuOpen(false);
+                                   }}
+                                   className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-error hover:bg-error/10 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest"
+                                 >
+                                    <LogOut className="w-4 h-4" />
+                                    {t('logout')}
+                                 </button>
+                              </motion.div>
+                            </>
+                          )}
+                        </AnimatePresence>
+                     </div>
                   </div>
                 ) : (
                   <button 

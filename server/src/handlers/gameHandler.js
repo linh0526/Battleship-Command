@@ -121,14 +121,16 @@ module.exports = (io, socket) => {
                 const matchData = extractMatchDataFromRoom(room, socket.clientId, 'VICTORY');
                 
                 saveMatchAndUpdateProfiles(matchData).then(result => {
-                    if (result && result.eloChanges) {
+                    if (result && result.eloResults) {
                         // Notify players about ELO changes
                         room.players.forEach(p => {
-                            const change = result.eloChanges[p.userId] || 0;
-                            io.to(p.socketId).emit('elo_update', { 
-                                currentElo: p.stats?.elo || 0, // In-memory stats fallback to 0
-                                change: change 
-                            });
+                            const eloData = result.eloResults[p.userId?.toString()];
+                            if (eloData) {
+                                io.to(p.socketId).emit('elo_update', { 
+                                    currentElo: eloData.currentElo,
+                                    change: eloData.change 
+                                });
+                            }
                         });
                     }
                 }).catch(err => {

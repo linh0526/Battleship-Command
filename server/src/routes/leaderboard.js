@@ -10,9 +10,9 @@ const { getRank } = require('../services/eloService');
  */
 router.get('/', async (req, res) => {
     try {
-        // Fetch top 100 profiles sorted by PvP wins descending
+        // Fetch top 100 profiles sorted by PvP ELO descending
         const profiles = await Profile.find({})
-            .sort({ 'stats.pvp.wins': -1 })
+            .sort({ 'stats.pvp.elo': -1 })
             .limit(100)
             .populate('userId', 'username avatar status');
 
